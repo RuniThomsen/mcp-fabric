@@ -103,9 +103,7 @@ namespace SemanticModelMcpServer.Tests
             Assert.Single(result.Errors);
             Assert.Contains("Syntax error", result.Errors[0]);
             Assert.Equal(2, _testRunner.LastFilesValidated.Count);
-        }
-
-        [Fact]
+        }        [Fact]
         public async Task ValidateAsync_ShouldHandleExceptions_FromPbiToolsRunner()
         {
             // Arrange
@@ -118,34 +116,26 @@ namespace SemanticModelMcpServer.Tests
             _testRunner.ExceptionMessage = "PBI Tools not found or failed to execute";
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(() => _validateTmdlTool.ValidateAsync(tmdlFiles));
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(tmdlFiles));
             Assert.Contains("PBI Tools", exception.Message);
-        }
-
-        [Fact]
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InternalError, exception.ErrorCode);
+        }        [Fact]
         public async Task ValidateAsync_ShouldHandleEmptyTmdlFiles()
         {
             // Arrange
             var tmdlFiles = new Dictionary<string, string>();
 
-            _testRunner.ShouldSucceed = false;
-            _testRunner.ErrorMessages = new List<string> { "No TMDL files provided for validation" };
-
-            // Act
-            var result = await _validateTmdlTool.ValidateAsync(tmdlFiles);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.False(result.IsValid);
-            Assert.Contains("No TMDL files provided", result.Errors[0]);
-        }
-
-        [Fact]
-        public async Task ValidateAsync_ShouldThrowArgumentNullException_WhenInputIsNull()
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(tmdlFiles));
+            Assert.Contains("At least one TMDL file must be provided", exception.Message);
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
+        }        [Fact]
+        public async Task ValidateAsync_ShouldThrowMcpException_WhenInputIsNull()
         {
-            // Act
-            var ex = await Assert.ThrowsAsync<ArgumentNullException>(() => _validateTmdlTool.ValidateAsync(null));
-            Assert.Contains("tmdlFiles", ex.ParamName);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(null));
+            Assert.Contains("TMDL files must be provided", exception.Message);
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
         }
 
         [Fact]

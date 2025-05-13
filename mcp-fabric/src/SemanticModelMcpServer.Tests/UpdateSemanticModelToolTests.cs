@@ -18,15 +18,16 @@ namespace SemanticModelMcpServer.Tests
         {
             _mockFabricClient = new Mock<IFabricClient>();
             _tool = new UpdateSemanticModelTool(_mockFabricClient.Object);
-        }
-
-        [Fact]
-        public async Task ExecuteAsync_ReturnsError_WhenRequestIsInvalid()
+        }        [Fact]
+        public async Task ExecuteAsync_ThrowsMcpException_WhenRequestIsInvalid()
         {
             var req = new UpdateSemanticModelRequest { ModelId = null, TmdlFiles = null };
-            var result = await _tool.ExecuteAsync(req);
-            Assert.Equal("Error", result.Status);
-            Assert.Contains("required", result.UpdatedDetails);
+            
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(
+                async () => await _tool.ExecuteAsync(req));
+                
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
+            Assert.Contains("Model ID is required", exception.Message);
         }
 
         [Fact]

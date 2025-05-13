@@ -37,10 +37,8 @@ namespace SemanticModelMcpServer.Tests
             _mockFabricClient.Verify(
                 x => x.PostAsync("/deployments", It.IsAny<HttpContent>()),
                 Times.Once);
-        }
-
-        [Fact]
-        public async Task DeploySemanticModelAsync_FailedDeployment_ShouldThrowException()
+        }        [Fact]
+        public async Task DeploySemanticModelAsync_FailedDeployment_ShouldThrowMcpException()
         {
             // Arrange
             var modelId = "test-model-id";
@@ -54,51 +52,48 @@ namespace SemanticModelMcpServer.Tests
                 });
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(
                 () => _deploymentTool.DeploySemanticModelAsync(modelId, targetEnvironment));
 
             Assert.Contains("Deployment failed", exception.Message);
             Assert.Contains("Invalid model ID", exception.Message);
-        }
-
-        [Fact]
-        public async Task DeploySemanticModelAsync_NullModelId_ShouldPassNullToClient()
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InternalError, exception.ErrorCode);
+        }        [Fact]
+        public async Task DeploySemanticModelAsync_NullModelId_ShouldThrowMcpException()
         {
             // Arrange
             string modelId = null;
             var targetEnvironment = "Production";
 
-            _mockFabricClient
-                .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<HttpContent>()))
-                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(
+                () => _deploymentTool.DeploySemanticModelAsync(modelId, targetEnvironment));
+            
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
+            Assert.Contains("Model ID is required", exception.Message);
 
-            // Act
-            await _deploymentTool.DeploySemanticModelAsync(modelId, targetEnvironment);
-
-            // Verify that PostAsync was called
+            // Verify that PostAsync was never called
             _mockFabricClient.Verify(
-                x => x.PostAsync("/deployments", It.IsAny<HttpContent>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task DeploySemanticModelAsync_EmptyTargetEnvironment_ShouldPassEmptyStringToClient()
+                x => x.PostAsync(It.IsAny<string>(), It.IsAny<HttpContent>()),
+                Times.Never);
+        }        [Fact]
+        public async Task DeploySemanticModelAsync_EmptyTargetEnvironment_ShouldThrowMcpException()
         {
             // Arrange
             var modelId = "test-model-id";
             string targetEnvironment = "";
 
-            _mockFabricClient
-                .Setup(x => x.PostAsync(It.IsAny<string>(), It.IsAny<HttpContent>()))
-                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(
+                () => _deploymentTool.DeploySemanticModelAsync(modelId, targetEnvironment));
+            
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
+            Assert.Contains("Target environment is required", exception.Message);
 
-            // Act
-            await _deploymentTool.DeploySemanticModelAsync(modelId, targetEnvironment);
-
-            // Verify that PostAsync was called
+            // Verify that PostAsync was never called
             _mockFabricClient.Verify(
-                x => x.PostAsync("/deployments", It.IsAny<HttpContent>()),
-                Times.Once);
+                x => x.PostAsync(It.IsAny<string>(), It.IsAny<HttpContent>()),
+                Times.Never);
         }
     }
 }

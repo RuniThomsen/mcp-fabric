@@ -71,10 +71,8 @@ namespace SemanticModelMcpServer.Tests
             Assert.NotNull(result);
             Assert.Equal("Failed", result.Status);
             Assert.Contains("failed to start", result.RefreshDetails);
-        }
-
-        [Fact]
-        public async Task ExecuteAsync_WithEmptyModelId_ShouldReturnError()
+        }        [Fact]
+        public async Task ExecuteAsync_WithEmptyModelId_ShouldThrowMcpException()
         {
             // Arrange
             var request = new RefreshSemanticModelRequest
@@ -83,13 +81,12 @@ namespace SemanticModelMcpServer.Tests
                 Type = "Full"
             };
 
-            // Act
-            var result = await _refreshTool.ExecuteAsync(request);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal("Error", result.Status);
-            Assert.Contains("Model ID is required", result.RefreshDetails);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(
+                async () => await _refreshTool.ExecuteAsync(request));
+            
+            Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
+            Assert.Contains("Model ID is required", exception.Message);
             
             // Verify that RefreshSemanticModelAsync was not called
             _mockFabricClient.Verify(

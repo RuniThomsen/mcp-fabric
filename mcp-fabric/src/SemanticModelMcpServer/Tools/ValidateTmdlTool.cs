@@ -24,9 +24,20 @@ namespace SemanticModelMcpServer.Tools
         public async Task<Services.ValidationResult> ValidateAsync(Dictionary<string, string> tmdlFiles)
         {
             if (tmdlFiles == null)
-                throw new ArgumentNullException(nameof(tmdlFiles));
-            var result = await _pbiToolsRunner.ValidateAsync(tmdlFiles);
-            return result;
+                throw new McpException("TMDL files must be provided for validation.", McpErrorCode.InvalidParams);
+                
+            if (tmdlFiles.Count == 0)
+                throw new McpException("At least one TMDL file must be provided for validation.", McpErrorCode.InvalidParams);
+                
+            try
+            {
+                var result = await _pbiToolsRunner.ValidateAsync(tmdlFiles);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new McpException("TMDL validation failed: " + ex.Message, ex, McpErrorCode.InternalError);
+            }
         }
     }
 }

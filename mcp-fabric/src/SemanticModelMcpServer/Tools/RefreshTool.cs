@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -28,22 +29,31 @@ namespace SemanticModelMcpServer.Tools
             
             if (string.IsNullOrEmpty(request.ModelId))
             {
-                return new RefreshSemanticModelResponse
-                {
-                    Status = "Error",
-                    RefreshDetails = "Model ID is required."
-                };
+                throw new McpException("Model ID is required.", McpErrorCode.InvalidParams);
             }
             
-            // Trigger the refresh operation for the specified semantic model
-            var success = await _fabricClient.RefreshSemanticModelAsync(request.ModelId, request.Type ?? "Full");
-            
-            return new RefreshSemanticModelResponse
+            try
             {
-                Status = success ? "Refreshing" : "Failed",
-                RefreshDetails = $"Refresh operation for model {request.ModelId} " + 
-                               (success ? "started successfully" : "failed to start")
-            };
+                // Trigger the refresh operation for the specified semantic model
+                var success = await _fabricClient.RefreshSemanticModelAsync(request.ModelId, request.Type ?? "Full");
+                
+                return new RefreshSemanticModelResponse
+                {
+                    Status = success ? "Refreshing" : "Failed",
+                    RefreshDetails = $"Refresh operation for model {request.ModelId} " + 
+                                   (success ? "started successfully" : "failed to start")
+                };
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Failed to refresh model {ModelId}: {Message}", request.ModelId, ex.Message);
+                throw new McpException($"Failed to refresh model: {ex.Message}", ex, McpErrorCode.InternalError);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during model refresh: {Message}", ex.Message);
+                throw new McpException($"An unexpected error occurred during refresh: {ex.Message}", ex, McpErrorCode.InternalError);
+            }
         }
     }
 }
