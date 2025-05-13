@@ -75,14 +75,16 @@ mcp-fabric
 Quickly launch the repository in a ready-to-code environment:
 
 [![Open in VS Code](https://img.shields.io/badge/Open%20in-VS%20Code-007ACC?logo=visualstudiocode&logoColor=white&style=for-the-badge)](https://open.vscode.dev/<org>/mcp-fabric)
+[![Open in VS Code Docker](https://img.shields.io/badge/VS%20Code-Docker-2496ED?logo=docker&logoColor=white&style=for-the-badge)](vscode://ms-vscode-remote.remote-containers/openRepoInContainer?url=https%3A%2F%2Fgithub.com%2F<org>%2Fmcp-fabric)
 [![Open in Dev Container](https://img.shields.io/badge/Dev%20Container-Docker-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://open.vscode.dev/<org>/mcp-fabric?feature=devcontainer)
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-GitHub%20Codespaces-181717?logo=github&logoColor=white&style=for-the-badge)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=<org>/mcp-fabric)
 
 Click any badge:
 
 1. **Open in VS Code** – opens the repo in vscode.dev (browser).  
-2. **Dev Container** – clones the repo locally and reopens it inside the pre-configured `.devcontainer` using the Docker backend (requires VS Code with the *Dev Containers* extension).
-3. **GitHub Codespaces** – opens the repository in a cloud-based development environment with a fully configured development container.
+2. **VS Code Docker** – clones the repo and opens it directly inside the local Dev Container using Docker (VS Code Desktop + *Dev Containers* extension required).  
+3. **Dev Container** – clones the repo locally and reopens it inside the pre-configured `.devcontainer` using the Docker backend (requires VS Code with the *Dev Containers* extension).  
+4. **GitHub Codespaces** – opens the repository in a cloud-based development environment with a fully configured development container.
 
 > Note: Replace `<org>` with your GitHub organization or user if you fork the repo.
 
