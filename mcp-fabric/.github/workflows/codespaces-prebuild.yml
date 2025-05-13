@@ -1,13 +1,9 @@
 name: MCP Fabric Server Workspace
 
 on:
-  # Auto-trigger when someone opens a codespace
-  codespaces:
-    prebuilds:
-      branches:
-        - main
-
-  # Can also be manually triggered from GitHub
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
