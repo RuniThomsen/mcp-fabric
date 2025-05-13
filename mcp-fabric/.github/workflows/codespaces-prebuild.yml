@@ -1,0 +1,25 @@
+name: MCP Fabric Server Workspace
+
+on:
+  # Auto-trigger when someone opens a codespace
+  codespaces:
+    prebuilds:
+      branches:
+        - main
+
+  # Can also be manually triggered from GitHub
+  workflow_dispatch:
+
+jobs:
+  build-codespaces:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Prebuilds the dev container to improve startup time
+      - name: Build dev container
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ghcr.io/your-org/mcp-fabric-devcontainer
+          push: always

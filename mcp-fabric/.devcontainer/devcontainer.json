@@ -1,0 +1,32 @@
+{
+  "name": "MCP Server Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "8.0"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [8080],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-vscode.PowerShell",
+        "github.copilot",
+        "github.copilot-chat"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "omnisharp.enableRoslynAnalyzers": true,
+        "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true
+      }
+    }
+  },
+  "postCreateCommand": "dotnet restore",
+  "remoteUser": "vscode"
+}
