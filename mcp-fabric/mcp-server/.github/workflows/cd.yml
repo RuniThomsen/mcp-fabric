@@ -1,0 +1,41 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+      - release
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish the application
+        run: dotnet publish src/SemanticModelMcpServer/SemanticModelMcpServer.csproj -c Release -o ./publish -p:PublishSingleFile=true -p:PublishTrimmed=true --runtime linux-x64 --self-contained true
+
+      - name: Build Docker image
+        run: |
+          docker build -t myregistry/mcp-server:latest ./publish
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push Docker image
+        run: |
+          docker push myregistry/mcp-server:latest
+
+      - name: Deploy to Azure
+        run: |
+          az webapp update --name myapp --resource-group myresourcegroup --docker-image myregistry/mcp-server:latest
