@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Protocol.Types;
 using ModelContextProtocol.Server;
 using SemanticModelMcpServer.Services;
 using SemanticModelMcpServer.Tools;
@@ -13,14 +14,29 @@ namespace SemanticModelMcpServer
     public class Program
     {
         public static async Task Main(string[] args)
-        {
-            await Host.CreateDefaultBuilder(args)
+        {            await Host.CreateDefaultBuilder(args)
                 .ConfigureServices((context, services) =>
                 {
                     // Add MCP server and register all tools from this assembly
-                    services.AddMcpServer()
-                        .WithStdioServerTransport() // Use StdioTransport for command-line tools
-                        .WithToolsFromAssembly(Assembly.GetExecutingAssembly());
+                    services.AddMcpServer(options =>
+                    {
+                        options.ServerInfo = new Implementation 
+                        {
+                            Name = "Semantic Model MCP Server",
+                            Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0"
+                            // Note: Homepage property is not available in the Implementation class
+                        };
+                        
+                        options.Capabilities = new ServerCapabilities
+                        {
+                            Tools = new ToolsCapability 
+                            { 
+                                // SDK will populate these from the registered tools
+                            }
+                        };
+                    })
+                    .WithStdioServerTransport() // Use StdioTransport for command-line tools
+                    .WithToolsFromAssembly(Assembly.GetExecutingAssembly());
 
                     // Use IHttpClientFactory for FabricClient
                     services.AddHttpClient<IFabricClient, FabricClient>();
