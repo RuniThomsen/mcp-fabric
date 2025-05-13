@@ -17,19 +17,9 @@ namespace SemanticModelMcpServer
             await Host.CreateDefaultBuilder(args)
                 .ConfigureServices((context, services) =>
                 {
-                    // Add MCP server and auto-register all tools in this assembly
-                    services.AddMcpServer(server =>
-                    {
-                        // Best practice: Use server.AddToolsFromAssembly(Assembly.GetExecutingAssembly()) if available in your MCP SDK
-                        // Fallback: Register tools explicitly
-                        // Best practice: Use server.AddToolsFromAssembly(Assembly.GetExecutingAssembly()) if available in your MCP SDK
-                        // Fallback: Register tools explicitly
-                        services.AddTransient<CreateSemanticModelTool>();
-                        services.AddTransient<UpdateSemanticModelTool>();
-                        services.AddTransient<RefreshTool>();
-                        services.AddTransient<DeploymentTool>();
-                        services.AddTransient<ValidateTmdlTool>();
-                    });
+                    // Add MCP server and register all tools from this assembly
+                    services.AddMcpServer()
+                        .WithToolsFromAssembly(Assembly.GetExecutingAssembly());
 
                     // Use IHttpClientFactory for FabricClient
                     services.AddHttpClient<IFabricClient, FabricClient>();

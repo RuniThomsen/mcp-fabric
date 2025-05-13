@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -19,6 +20,7 @@ namespace SemanticModelMcpServer.Tools
         }
 
         [McpServerTool("deploySemanticModel")]
+        [Description("Deploys a semantic model to the specified target environment.")]
         public async Task DeploySemanticModelAsync(string modelId, string targetEnvironment)
         {
             // Logic to deploy the semantic model to the specified environment

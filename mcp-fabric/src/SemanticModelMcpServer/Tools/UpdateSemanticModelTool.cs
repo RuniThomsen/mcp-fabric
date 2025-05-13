@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using ModelContextProtocol;
@@ -19,6 +20,7 @@ namespace SemanticModelMcpServer.Tools
         }
 
         [McpServerTool("updateSemanticModel")]
+        [Description("Updates an existing semantic model in Fabric with new TMDL files.")]
         public async Task<UpdateSemanticModelResponse> ExecuteAsync(UpdateSemanticModelRequest request)
         {
             // Validate the request

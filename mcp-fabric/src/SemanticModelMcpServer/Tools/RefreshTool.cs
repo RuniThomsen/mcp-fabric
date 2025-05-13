@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
@@ -20,6 +21,7 @@ namespace SemanticModelMcpServer.Tools
         }
 
         [McpServerTool("refreshSemanticModel")]
+        [Description("Refreshes a semantic model in Fabric to update its data.")]
         public async Task<RefreshSemanticModelResponse> ExecuteAsync(RefreshSemanticModelRequest request)
         {
             _logger.LogInformation("Starting refresh for semantic model: {ModelId}, type: {Type}", request.ModelId, request.Type ?? "Full");

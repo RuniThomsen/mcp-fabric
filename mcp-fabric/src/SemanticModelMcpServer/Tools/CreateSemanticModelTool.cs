@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol;
@@ -22,6 +23,7 @@ namespace SemanticModelMcpServer.Tools
         }
 
         [McpServerTool("createSemanticModel")]
+        [Description("Creates a new semantic model in Fabric from TMDL files.")]
         public async Task<CreateSemanticModelResponse> ExecuteAsync(CreateSemanticModelRequest request)
         {
             _logger.LogInformation("Starting the creation of semantic model: {ModelName}", request.Name);

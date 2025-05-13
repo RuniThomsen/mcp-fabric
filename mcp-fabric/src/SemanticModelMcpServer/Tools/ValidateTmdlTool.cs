@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ namespace SemanticModelMcpServer.Tools
         }
 
         [McpServerTool("validateTmdl")]
+        [Description("Validates TMDL files for syntax and semantic errors.")]
         public async Task<Services.ValidationResult> ValidateAsync(Dictionary<string, string> tmdlFiles)
         {
             if (tmdlFiles == null)
