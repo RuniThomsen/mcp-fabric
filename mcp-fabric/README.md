@@ -84,6 +84,24 @@ Click either badge:
 
 > Note: Replace `<org>` with your GitHub organization or user if you fork the repo.
 
+### Docker Quick Launch
+
+Quickly build and run the MCP server in Docker:
+
+[![Quick Launch Docker](https://img.shields.io/badge/Quick%20Launch-Docker-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://hub.docker.com/)
+
+Click the badge or use the following commands:
+
+```powershell
+# Build the Docker image
+docker build -t mcp-server:latest .
+
+# Run the container
+docker run -p 8080:80 -e FABRIC_API_URL=https://api.fabric.microsoft.com -e FABRIC_AUTH_METHOD=ServicePrincipal mcp-server:latest
+```
+
+> Note: Ensure Docker is installed and running on your system. You can configure environment variables as needed for your setup.
+
 ### Installation
 
 1. Clone the repository:
