@@ -70,6 +70,20 @@ mcp-fabric
 - Power BI tools for TMDL validation and processing
 - Azure Authentication for secure access to Microsoft Fabric resources
 
+### VS Code One-Click Setup
+
+Quickly launch the repository in a ready-to-code environment:
+
+[![Open in VS Code](https://img.shields.io/badge/Open%20in-VS%20Code-007ACC?logo=visualstudiocode&logoColor=white&style=for-the-badge)](https://open.vscode.dev/<org>/mcp-fabric)
+[![Open in Dev Container](https://img.shields.io/badge/Dev%20Container-Docker-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://open.vscode.dev/<org>/mcp-fabric?feature=devcontainer)
+
+Click either badge:
+
+1. **Open in VS Code** – opens the repo in vscode.dev (browser).  
+2. **Dev Container** – clones the repo locally and reopens it inside the pre-configured `.devcontainer` using the Docker backend (requires VS Code with the *Dev Containers* extension).
+
+> Note: Replace `<org>` with your GitHub organization or user if you fork the repo.
+
 ### Installation
 
 1. Clone the repository:
