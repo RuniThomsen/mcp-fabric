@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Azure.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using SemanticModelMcpServer.Models.Requests;
 
 namespace SemanticModelMcpServer.Services
@@ -15,12 +16,13 @@ namespace SemanticModelMcpServer.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<FabricClient> _logger;
-        private readonly string _baseUrl = "https://api.powerbi.com";
+        private readonly string _baseUrl;
 
-        public FabricClient(HttpClient httpClient, ILogger<FabricClient> logger)
+        public FabricClient(HttpClient httpClient, ILogger<FabricClient> logger, IConfiguration config = null)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _baseUrl = config?["FABRIC_API_URL"] ?? Environment.GetEnvironmentVariable("FABRIC_API_URL") ?? "https://api.powerbi.com";
             _httpClient.BaseAddress = new Uri(_baseUrl);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
@@ -38,6 +40,14 @@ namespace SemanticModelMcpServer.Services
         {
             var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
             var token = await credential.GetTokenAsync(new Azure.Core.TokenRequestContext(new[] { "https://analysis.windows.net/powerbi/api/.default" }));
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+        }
+
+        // Best practice: support DefaultAzureCredential for local/dev/managed identity
+        public async Task AuthenticateWithDefaultCredentialAsync()
+        {
+            var cred = new DefaultAzureCredential();
+            var token = await cred.GetTokenAsync(new Azure.Core.TokenRequestContext(new[] { "https://analysis.windows.net/powerbi/api/.default" }));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
         }
 

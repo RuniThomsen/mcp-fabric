@@ -57,3 +57,16 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: ghcr.io/${{ github.repository }}/mcp-server:latest, ghcr.io/${{ github.repository }}/mcp-server:${{ github.sha }}
+
+    - name: Generate SBOM
+      uses: github/sbom-action@v0.7.0
+      with:
+        path: ./publish
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@v0.16.0
+      with:
+        image-ref: ghcr.io/${{ github.repository }}/mcp-server:latest
+        format: table
+        exit-code: 1
+        ignore-unfixed: true

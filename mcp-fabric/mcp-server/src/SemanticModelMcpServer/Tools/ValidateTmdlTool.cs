@@ -18,11 +18,12 @@ namespace SemanticModelMcpServer.Tools
             _pbiToolsRunner = pbiToolsRunner;
         }
 
+        // Best practice: Return a dedicated DTO for validation results, not internal types
         public async Task<Services.ValidationResult> ValidateAsync(Dictionary<string, string> tmdlFiles)
         {
             if (tmdlFiles == null)
                 throw new ArgumentNullException(nameof(tmdlFiles));
-
+            // Error handling: exceptions are surfaced to caller for agent to handle
             var result = await _pbiToolsRunner.ValidateAsync(tmdlFiles);
             return result;
         }

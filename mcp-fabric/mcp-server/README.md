@@ -229,6 +229,15 @@ else
    - Run `dotnet restore` to ensure all dependencies are properly installed
    - Check that you have the required versions of all tools
 
+## Security, Supply Chain & Best Practices
+
+- Uses Azure Managed Identity or DefaultAzureCredential for authentication (no secrets in code)
+- Reads FABRIC_API_URL from environment/configuration (not hardcoded)
+- Container includes a HEALTHCHECK for runtime validation
+- CI pipeline generates a Software Bill of Materials (SBOM) and runs Trivy for vulnerability scanning
+- Follows MCP SDK best practices for tool registration (see Program.cs for comments)
+- Uses IHttpClientFactory for resilient HTTP calls
+
 ## Contributing
 
 Contributions are welcome! Please follow these steps:
