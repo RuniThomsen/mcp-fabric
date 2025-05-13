@@ -1,0 +1,95 @@
+name: Issue Management
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, reopened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: true
+        type: number
+
+jobs:
+  process-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Process new issues
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            console.log(`New issue #${issue.number} created: ${issue.title}`);
+            
+            // Add default label for triage
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: ['needs-triage']
+            });
+            
+            // Comment on the issue with next steps
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `Thanks for submitting this issue! Our team will review it shortly.`
+            });
+
+      - name: Process issue labels
+        if: github.event_name == 'issues' && (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const labels = issue.labels.map(label => label.name);
+            
+            console.log(`Issue #${issue.number} has labels: ${labels.join(', ')}`);
+            
+            // Add additional processing based on labels if needed
+            if (labels.includes('bug') && labels.includes('high-priority')) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `This issue has been marked as a high-priority bug and will be addressed promptly.`
+              });
+            }
+
+      - name: Process manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.payload.inputs.issue_number;
+            
+            // Get the issue details
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+            
+            console.log(`Processing issue #${issue.number}: ${issue.title}`);
+            
+            // Example: Add a label and comment
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: ['manually-processed']
+            });
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `This issue was manually processed by the workflow at ${new Date().toISOString()}`
+            });

@@ -7,7 +7,7 @@ using SemanticModelMcpServer.Services;
 
 namespace SemanticModelMcpServer.Tools
 {
-    [McpTool("refreshSemanticModel", "Triggers a refresh operation for a semantic model in Fabric.")]
+    [McpServerToolType]
     public class RefreshTool
     {
         private readonly IFabricClient _fabricClient;
@@ -19,28 +19,29 @@ namespace SemanticModelMcpServer.Tools
             _logger = logger;
         }
 
-    public async Task<RefreshSemanticModelResponse> ExecuteAsync(RefreshSemanticModelRequest request)
-    {
-        _logger.LogInformation("Starting refresh for semantic model: {ModelId}, type: {Type}", request.ModelId, request.Type ?? "Full");
-        
-        if (string.IsNullOrEmpty(request.ModelId))
+        [McpServerTool("refreshSemanticModel")]
+        public async Task<RefreshSemanticModelResponse> ExecuteAsync(RefreshSemanticModelRequest request)
         {
+            _logger.LogInformation("Starting refresh for semantic model: {ModelId}, type: {Type}", request.ModelId, request.Type ?? "Full");
+            
+            if (string.IsNullOrEmpty(request.ModelId))
+            {
+                return new RefreshSemanticModelResponse
+                {
+                    Status = "Error",
+                    RefreshDetails = "Model ID is required."
+                };
+            }
+            
+            // Trigger the refresh operation for the specified semantic model
+            var success = await _fabricClient.RefreshSemanticModelAsync(request.ModelId, request.Type ?? "Full");
+            
             return new RefreshSemanticModelResponse
             {
-                Status = "Error",
-                RefreshDetails = "Model ID is required."
+                Status = success ? "Refreshing" : "Failed",
+                RefreshDetails = $"Refresh operation for model {request.ModelId} " + 
+                               (success ? "started successfully" : "failed to start")
             };
         }
-        
-        // Trigger the refresh operation for the specified semantic model
-        var success = await _fabricClient.RefreshSemanticModelAsync(request.ModelId, request.Type ?? "Full");
-        
-        return new RefreshSemanticModelResponse
-        {
-            Status = success ? "Refreshing" : "Failed",
-            RefreshDetails = $"Refresh operation for model {request.ModelId} " + 
-                           (success ? "started successfully" : "failed to start")
-        };
-    }
     }
 }

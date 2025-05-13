@@ -9,7 +9,7 @@ using SemanticModelMcpServer.Services;
 
 namespace SemanticModelMcpServer.Tools
 {
-    [McpTool("createSemanticModel", "Creates a new semantic model in Fabric from TMDL files.")]
+    [McpServerToolType]
     public class CreateSemanticModelTool
     {
         private readonly ILogger<CreateSemanticModelTool> _logger;
@@ -21,6 +21,7 @@ namespace SemanticModelMcpServer.Tools
             _fabricClient = fabricClient;
         }
 
+        [McpServerTool("createSemanticModel")]
         public async Task<CreateSemanticModelResponse> ExecuteAsync(CreateSemanticModelRequest request)
         {
             _logger.LogInformation("Starting the creation of semantic model: {ModelName}", request.Name);

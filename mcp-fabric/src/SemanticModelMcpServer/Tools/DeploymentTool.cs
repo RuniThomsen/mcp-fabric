@@ -8,31 +8,32 @@ using SemanticModelMcpServer.Services;
 
 namespace SemanticModelMcpServer.Tools
 {
-    [McpTool("deploySemanticModel", "Deploys a semantic model to the specified environment.")]
+    [McpServerToolType]
     public class DeploymentTool
     {
         private readonly IFabricClient _fabricClient;
 
-    public DeploymentTool(IFabricClient fabricClient)
-    {
-        _fabricClient = fabricClient;
-    }
-
-    public async Task DeploySemanticModelAsync(string modelId, string targetEnvironment)
-    {
-        // Logic to deploy the semantic model to the specified environment
-        var deploymentRequest = new
+        public DeploymentTool(IFabricClient fabricClient)
         {
-            ModelId = modelId,
-            TargetEnvironment = targetEnvironment
-        };
+            _fabricClient = fabricClient;
+        }
 
-        var content = new StringContent(JsonSerializer.Serialize(deploymentRequest), System.Text.Encoding.UTF8, "application/json");
-        var response = await _fabricClient.PostAsync("/deployments", content);
-        if (!response.IsSuccessStatusCode)
+        [McpServerTool("deploySemanticModel")]
+        public async Task DeploySemanticModelAsync(string modelId, string targetEnvironment)
         {
-            throw new Exception($"Deployment failed: {response.ReasonPhrase}");
+            // Logic to deploy the semantic model to the specified environment
+            var deploymentRequest = new
+            {
+                ModelId = modelId,
+                TargetEnvironment = targetEnvironment
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(deploymentRequest), System.Text.Encoding.UTF8, "application/json");
+            var response = await _fabricClient.PostAsync("/deployments", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Deployment failed: {response.ReasonPhrase}");
+            }
         }
     }
-}
 }

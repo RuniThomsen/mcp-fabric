@@ -8,7 +8,7 @@ using SemanticModelMcpServer.Services;
 
 namespace SemanticModelMcpServer.Tools
 {
-    [McpTool("updateSemanticModel", "Updates an existing semantic model in Fabric with new TMDL files.")]
+    [McpServerToolType]
     public class UpdateSemanticModelTool
     {
         private readonly IFabricClient _fabricClient;
@@ -18,6 +18,7 @@ namespace SemanticModelMcpServer.Tools
             _fabricClient = fabricClient;
         }
 
+        [McpServerTool("updateSemanticModel")]
         public async Task<UpdateSemanticModelResponse> ExecuteAsync(UpdateSemanticModelRequest request)
         {
             // Validate the request
