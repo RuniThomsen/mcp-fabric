@@ -6,6 +6,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using ModelContextProtocol;
 using SemanticModelMcpServer.Services;
+using SemanticModelMcpServer.Models.Requests;
+using SemanticModelMcpServer.Models.Responses;
 
 namespace SemanticModelMcpServer.Tools
 {
@@ -21,15 +23,15 @@ namespace SemanticModelMcpServer.Tools
 
         [McpServerTool("deploySemanticModel")]
         [Description("Deploys a semantic model to the specified target environment.")]
-        public async Task DeploySemanticModelAsync(string modelId, string targetEnvironment)
+        public async Task<DeploymentResponse> ExecuteAsync(DeploymentRequest request)
         {
             // Validate parameters
-            if (string.IsNullOrEmpty(modelId))
+            if (string.IsNullOrEmpty(request.ModelId))
             {
                 throw new McpException("Model ID is required.", McpErrorCode.InvalidParams);
             }
             
-            if (string.IsNullOrEmpty(targetEnvironment))
+            if (string.IsNullOrEmpty(request.TargetEnvironment))
             {
                 throw new McpException("Target environment is required.", McpErrorCode.InvalidParams);
             }
@@ -39,8 +41,8 @@ namespace SemanticModelMcpServer.Tools
                 // Logic to deploy the semantic model to the specified environment
                 var deploymentRequest = new
                 {
-                    ModelId = modelId,
-                    TargetEnvironment = targetEnvironment
+                    ModelId = request.ModelId,
+                    TargetEnvironment = request.TargetEnvironment
                 };
 
                 var content = new StringContent(JsonSerializer.Serialize(deploymentRequest), System.Text.Encoding.UTF8, "application/json");
@@ -51,6 +53,12 @@ namespace SemanticModelMcpServer.Tools
                     var errorMessage = $"Deployment failed with status code {(int)response.StatusCode}: {response.ReasonPhrase}";
                     throw new McpException(errorMessage, McpErrorCode.InternalError);
                 }
+
+                return new DeploymentResponse
+                {
+                    Status = "Deployed",
+                    Details = $"Model {request.ModelId} successfully deployed to {request.TargetEnvironment}"
+                };
             }
             catch (HttpRequestException ex)
             {

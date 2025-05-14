@@ -104,33 +104,62 @@ namespace SemanticModelMcpServer.Services
         {
             _logger.LogInformation("Updating semantic model: {0}", modelId);
             
-            // Pack TMDL files into a ZIP archive
-            byte[] zipContent = ZipHelper.PackTmdl(tmdlFiles);
-            
-            // Create content for the request
-            var content = new ByteArrayContent(zipContent);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            
-            // Send request to Fabric API to update semantic model definition
-            var response = await PatchAsync($"/v1.0/myorg/semanticModels/{modelId}/updateDefinition", content);
-            response.EnsureSuccessStatusCode();
-            
-            return true;
+            if (string.IsNullOrEmpty(modelId))
+                throw new InvalidOperationException("Model ID is required");
+                
+            if (tmdlFiles == null || tmdlFiles.Count == 0)
+                throw new InvalidOperationException("TMDL files are required");
+                
+            try
+            {
+                // Pack TMDL files into a ZIP archive
+                byte[] zipContent = ZipHelper.PackTmdl(tmdlFiles);
+                
+                // Create content for the request
+                var content = new MultipartFormDataContent
+                {
+                    { new ByteArrayContent(zipContent), "definitionFile", "model.zip" }
+                };
+                
+                // Send request to Fabric API to update semantic model
+                var response = await PatchAsync($"/v1.0/myorg/semanticModels/{modelId}", content);
+                response.EnsureSuccessStatusCode();
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating semantic model {0}: {1}", modelId, ex.Message);
+                return false;
+            }
         }
 
         public async Task<bool> RefreshSemanticModelAsync(string modelId, string refreshType = "Full")
         {
             _logger.LogInformation("Refreshing semantic model: {0} with type: {1}", modelId, refreshType);
             
-            var refreshRequest = new { type = refreshType };
-            
-            // Send request to Fabric API to refresh the semantic model
-            var response = await PostAsync($"/v1.0/myorg/datasets/{modelId}/refreshes", 
-                new StringContent(JsonSerializer.Serialize(refreshRequest), 
-                System.Text.Encoding.UTF8, "application/json"));
-            
-            response.EnsureSuccessStatusCode();
-            return true;
+            if (string.IsNullOrEmpty(modelId))
+                throw new InvalidOperationException("Model ID is required");
+                
+            try
+            {
+                // Create content for refresh request
+                var content = new StringContent(
+                    JsonSerializer.Serialize(new { Type = refreshType }),
+                    Encoding.UTF8,
+                    "application/json");
+                
+                // Send request to trigger refresh
+                var response = await PostAsync($"/v1.0/myorg/semanticModels/{modelId}/refreshes", content);
+                response.EnsureSuccessStatusCode();
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing semantic model {0}: {1}", modelId, ex.Message);
+                return false;
+            }
         }
     }
 }

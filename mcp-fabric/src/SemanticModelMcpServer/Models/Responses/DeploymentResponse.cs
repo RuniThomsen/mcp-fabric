@@ -1,8 +1,8 @@
 namespace SemanticModelMcpServer.Models.Responses
 {
-    public class UpdateSemanticModelResponse
+    public class DeploymentResponse
     {
         public string Status { get; set; }
-        public string UpdatedDetails { get; set; }
+        public string Details { get; set; }
     }
 }
