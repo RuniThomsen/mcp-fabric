@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -146,8 +147,9 @@ namespace SemanticModelMcpServer.Services
                 // Create content for refresh request
                 var content = new StringContent(
                     JsonSerializer.Serialize(new { Type = refreshType }),
-                    Encoding.UTF8,
+                    Encoding.UTF8, 
                     "application/json");
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
                 
                 // Send request to trigger refresh
                 var response = await PostAsync($"/v1.0/myorg/semanticModels/{modelId}/refreshes", content);

@@ -2,16 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.Extensions.Logging;
+using Moq;
 using SemanticModelMcpServer.Services;
 using SemanticModelMcpServer.Tools;
+using SemanticModelMcpServer.Models.Requests;
 
 namespace SemanticModelMcpServer.Tests
 {
     // Test implementation of IPbiToolsRunner for testing
     public class TestPbiToolsRunner : IPbiToolsRunner
-    {
+    {        
         public bool ShouldSucceed { get; set; } = true;
-        public List<string> ErrorMessages { get; set; } = new List<string>();
+        public List<ValidationError> ErrorMessages { get; set; } = new List<ValidationError>();
         public bool ShouldThrowException { get; set; } = false;
         public string ExceptionMessage { get; set; } = "PBI Tools not found or failed to execute";
         public Dictionary<string, string> LastFilesValidated { get; private set; }
@@ -33,7 +36,7 @@ namespace SemanticModelMcpServer.Tests
                 return Task.FromResult(new ValidationResult
                 {
                     IsValid = false,
-                    Errors = new List<string> { "No TMDL files provided for validation" }
+                    Errors = new List<ValidationError> { new ValidationError { Message = "No TMDL files provided for validation" } }
                 });
             }
 
@@ -43,18 +46,20 @@ namespace SemanticModelMcpServer.Tests
                 Errors = ErrorMessages
             });
         }
-    }
+    }    
 
     public class ValidateTmdlToolTests
     {
         private readonly TestPbiToolsRunner _testRunner;
         private readonly ValidateTmdlTool _validateTmdlTool;
+        private readonly Mock<ILogger<ValidateTmdlTool>> _mockLogger;
 
         public ValidateTmdlToolTests()
         {
             _testRunner = new TestPbiToolsRunner();
-            _validateTmdlTool = new ValidateTmdlTool(_testRunner);
-        }
+            _mockLogger = new Mock<ILogger<ValidateTmdlTool>>();
+            _validateTmdlTool = new ValidateTmdlTool(_testRunner, _mockLogger.Object);
+        }        
 
         [Fact]
         public async Task ValidateAsync_ShouldReturnValidResult_WhenTmdlIsValid()
@@ -67,10 +72,11 @@ namespace SemanticModelMcpServer.Tests
             };
 
             _testRunner.ShouldSucceed = true;
-            _testRunner.ErrorMessages = new List<string>();
+            _testRunner.ErrorMessages = new List<ValidationError>();
 
             // Act
-            var result = await _validateTmdlTool.ValidateAsync(tmdlFiles);
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var result = await _validateTmdlTool.ExecuteAsync(request);
 
             // Assert
             Assert.NotNull(result);
@@ -79,7 +85,7 @@ namespace SemanticModelMcpServer.Tests
             Assert.Equal(2, _testRunner.LastFilesValidated.Count);
             Assert.True(_testRunner.LastFilesValidated.ContainsKey("model.tmdl"));
             Assert.True(_testRunner.LastFilesValidated.ContainsKey("tables/table1.tmdl"));
-        }
+        }        
 
         [Fact]
         public async Task ValidateAsync_ShouldReturnInvalidResult_WhenTmdlHasErrors()
@@ -92,18 +98,23 @@ namespace SemanticModelMcpServer.Tests
             };
 
             _testRunner.ShouldSucceed = false;
-            _testRunner.ErrorMessages = new List<string> { "Error: Syntax error at line 1: Missing closing brace" };
+            _testRunner.ErrorMessages = new List<ValidationError> { 
+                new ValidationError { Message = "Error: Syntax error at line 1: Missing closing brace" } 
+            };
 
             // Act
-            var result = await _validateTmdlTool.ValidateAsync(tmdlFiles);
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var result = await _validateTmdlTool.ExecuteAsync(request);
 
             // Assert
             Assert.NotNull(result);
             Assert.False(result.IsValid);
             Assert.Single(result.Errors);
-            Assert.Contains("Syntax error", result.Errors[0]);
+            Assert.Contains("Syntax error", result.Errors[0].Message);
             Assert.Equal(2, _testRunner.LastFilesValidated.Count);
-        }        [Fact]
+        }        
+
+        [Fact]
         public async Task ValidateAsync_ShouldHandleExceptions_FromPbiToolsRunner()
         {
             // Arrange
@@ -116,24 +127,31 @@ namespace SemanticModelMcpServer.Tests
             _testRunner.ExceptionMessage = "PBI Tools not found or failed to execute";
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(tmdlFiles));
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ExecuteAsync(request));
             Assert.Contains("PBI Tools", exception.Message);
             Assert.Equal(ModelContextProtocol.McpErrorCode.InternalError, exception.ErrorCode);
-        }        [Fact]
+        }        
+
+        [Fact]
         public async Task ValidateAsync_ShouldHandleEmptyTmdlFiles()
         {
             // Arrange
             var tmdlFiles = new Dictionary<string, string>();
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(tmdlFiles));
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ExecuteAsync(request));
             Assert.Contains("At least one TMDL file must be provided", exception.Message);
             Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
-        }        [Fact]
+        }        
+
+        [Fact]
         public async Task ValidateAsync_ShouldThrowMcpException_WhenInputIsNull()
         {
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(null));
+            var request = new ValidateTmdlRequest { TmdlFiles = null };
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ExecuteAsync(request));
             Assert.Contains("TMDL files must be provided", exception.Message);
             Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
         }
@@ -147,7 +165,8 @@ namespace SemanticModelMcpServer.Tests
             _testRunner.CallCount = 0;
 
             // Act
-            await _validateTmdlTool.ValidateAsync(files);
+            var request = new ValidateTmdlRequest { TmdlFiles = files };
+            await _validateTmdlTool.ExecuteAsync(request);
 
             // Assert
             Assert.Equal(1, _testRunner.CallCount);
@@ -159,18 +178,23 @@ namespace SemanticModelMcpServer.Tests
             // Arrange
             var tmdlFiles = new Dictionary<string, string> { { "model.tmdl", "bad" } };
             _testRunner.ShouldSucceed = false;
-            _testRunner.ErrorMessages = new List<string> { "Error 1", "Error 2", "Error 3" };
+            _testRunner.ErrorMessages = new List<ValidationError> { 
+                new ValidationError { Message = "Error 1" },
+                new ValidationError { Message = "Error 2" },
+                new ValidationError { Message = "Error 3" }
+            };
 
             // Act
-            var result = await _validateTmdlTool.ValidateAsync(tmdlFiles);
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var result = await _validateTmdlTool.ExecuteAsync(request);
 
             // Assert
             Assert.NotNull(result);
             Assert.False(result.IsValid);
             Assert.Equal(3, result.Errors.Count);
-            Assert.Contains("Error 1", result.Errors);
-            Assert.Contains("Error 2", result.Errors);
-            Assert.Contains("Error 3", result.Errors);
+            Assert.Equal("Error 1", result.Errors[0].Message);
+            Assert.Equal("Error 2", result.Errors[1].Message);
+            Assert.Equal("Error 3", result.Errors[2].Message);
         }
 
         [Fact]
@@ -181,10 +205,11 @@ namespace SemanticModelMcpServer.Tests
             for (int i = 0; i < 1000; i++)
                 tmdlFiles[$"file{i}.tmdl"] = $"model Model{i} {{ }}";
             _testRunner.ShouldSucceed = true;
-            _testRunner.ErrorMessages = new List<string>();
+            _testRunner.ErrorMessages = new List<ValidationError>();
 
             // Act
-            var result = await _validateTmdlTool.ValidateAsync(tmdlFiles);
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var result = await _validateTmdlTool.ExecuteAsync(request);
 
             // Assert
             Assert.NotNull(result);
@@ -203,10 +228,11 @@ namespace SemanticModelMcpServer.Tests
                 { "TABLES/table2.TMDL", "table T2 {}" }
             };
             _testRunner.ShouldSucceed = true;
-            _testRunner.ErrorMessages = new List<string>();
+            _testRunner.ErrorMessages = new List<ValidationError>();
 
             // Act
-            var result = await _validateTmdlTool.ValidateAsync(tmdlFiles);
+            var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
+            var result = await _validateTmdlTool.ExecuteAsync(request);
 
             // Assert
             Assert.NotNull(result);

@@ -14,9 +14,33 @@ namespace SemanticModelMcpServer
     public class Program
     {
         public static async Task Main(string[] args)
-        {            await Host.CreateDefaultBuilder(args)
+        {
+            await Host.CreateDefaultBuilder(args)
                 .ConfigureServices((context, services) =>
                 {
+                    // DEBUG: Log tool discovery details
+                    var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
+                    var logger = loggerFactory.CreateLogger("ToolDiscovery");
+                    var toolAssembly = typeof(CreateSemanticModelTool).Assembly;
+                    logger.LogInformation("Scanning assembly: {Assembly}", toolAssembly.FullName);
+                    var toolTypes = toolAssembly.GetTypes();
+                    foreach (var type in toolTypes)
+                    {
+                        if (type.Name.EndsWith("Tool") && !type.IsInterface && !type.IsAbstract)
+                        {
+                            var hasTypeAttr = type.GetCustomAttributes(typeof(ModelContextProtocol.McpServerToolTypeAttribute), false).Length > 0;
+                            logger.LogInformation("Tool type: {Type} [McpServerToolType: {HasAttr}]", type.FullName, hasTypeAttr);
+                            foreach (var method in type.GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
+                            {
+                                var toolAttr = method.GetCustomAttribute<ModelContextProtocol.McpServerToolAttribute>();
+                                if (toolAttr != null)
+                                {
+                                    logger.LogInformation("  Tool method: {Method} [McpServerTool: {ToolName}]", method.Name, toolAttr.Name);
+                                }
+                            }
+                        }
+                    }
+
                     // Add MCP server and register all tools from this assembly
                     services.AddMcpServer(options =>
                     {
@@ -24,19 +48,21 @@ namespace SemanticModelMcpServer
                         {
                             Name = "Semantic Model MCP Server",
                             Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0"
-                            // Note: Homepage property is not available in the Implementation class
                         };
-                        
                         options.Capabilities = new ServerCapabilities
                         {
-                            Tools = new ToolsCapability 
-                            { 
-                                // SDK will populate these from the registered tools
-                            }
+                            Tools = new ToolsCapability { }
                         };
                     })
-                    .WithStdioServerTransport() // Use StdioTransport for command-line tools
-                    .WithToolsFromAssembly(Assembly.GetExecutingAssembly());
+                    .WithStdioServerTransport()
+                    .WithToolsFromAssembly(typeof(CreateSemanticModelTool).Assembly); // Ensures tool discovery
+
+                    // Explicitly register all tool classes for DI
+                    services.AddTransient<CreateSemanticModelTool>();
+                    services.AddTransient<UpdateSemanticModelTool>();
+                    services.AddTransient<RefreshTool>();
+                    services.AddTransient<DeploymentTool>();
+                    services.AddTransient<ValidateTmdlTool>();
 
                     // Use IHttpClientFactory for FabricClient
                     services.AddHttpClient<IFabricClient, FabricClient>();

@@ -11,11 +11,11 @@ using SemanticModelMcpServer.Tools;
 using Xunit;
 
 namespace SemanticModelMcpServer.Tests
-{
-    public class McpExceptionHandlingTests
+{    public class McpExceptionHandlingTests
     {
         #region CreateSemanticModelTool Tests
-          [Fact]
+        
+        [Fact]
         public async Task CreateSemanticModelTool_EmptyModelName_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
@@ -30,8 +30,7 @@ namespace SemanticModelMcpServer.Tests
             
             Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
             Assert.Contains("Model name is required", exception.Message);
-        }
-          [Fact]
+        }        [Fact]
         public async Task CreateSemanticModelTool_NoTmdlFiles_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
@@ -49,8 +48,9 @@ namespace SemanticModelMcpServer.Tests
                 async () => await tool.ExecuteAsync(request));
             
             Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
-            Assert.Contains("At least one TMDL file is required", exception.Message);
-        }[Fact]
+            Assert.Contains("At least one TMDL file is required", exception.Message);        }
+        
+        [Fact]
         public async Task CreateSemanticModelTool_ClientThrowsInvalidOperation_ShouldRethrowAsMcpException()
         {
             // Arrange
@@ -158,39 +158,40 @@ namespace SemanticModelMcpServer.Tests
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<McpException>(
-                async () => await tool.ExecuteAsync(request));
-            
-            Assert.Equal(McpErrorCode.InternalError, exception.ErrorCode);
+                async () => await tool.ExecuteAsync(request));            Assert.Equal(McpErrorCode.InternalError, exception.ErrorCode);
             Assert.Contains("An unexpected error occurred during refresh", exception.Message);
             Assert.IsType<Exception>(exception.InnerException);
         }
-
+        
         #endregion
 
         #region ValidateTmdlTool Tests
-
+        
         [Fact]
         public async Task ValidateTmdlTool_NullTmdlFiles_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
             var mockPbiToolsRunner = new Mock<IPbiToolsRunner>();
-            var tool = new ValidateTmdlTool(mockPbiToolsRunner.Object);
+            var mockLogger = new Mock<ILogger<ValidateTmdlTool>>();
+            var tool = new ValidateTmdlTool(mockPbiToolsRunner.Object, mockLogger.Object);
+            var request = new Models.Requests.ValidateTmdlRequest { TmdlFiles = null };
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<McpException>(
-                async () => await tool.ValidateAsync(null));
-            
-            Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
+                async () => await tool.ExecuteAsync(request));
+              Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
             Assert.Contains("TMDL files must be provided for validation", exception.Message);
         }
-
+        
         [Fact]
         public async Task ValidateTmdlTool_RunnerThrowsException_ShouldRethrowAsMcpException()
         {
             // Arrange
             var mockPbiToolsRunner = new Mock<IPbiToolsRunner>();
-            var tool = new ValidateTmdlTool(mockPbiToolsRunner.Object);
+            var mockLogger = new Mock<ILogger<ValidateTmdlTool>>();
+            var tool = new ValidateTmdlTool(mockPbiToolsRunner.Object, mockLogger.Object);
             var tmdlFiles = new Dictionary<string, string> { { "test.tmdl", "content" } };
+            var request = new Models.Requests.ValidateTmdlRequest { TmdlFiles = tmdlFiles };
 
             mockPbiToolsRunner
                 .Setup(x => x.ValidateAsync(It.IsAny<Dictionary<string, string>>()))
@@ -198,42 +199,50 @@ namespace SemanticModelMcpServer.Tests
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<McpException>(
-                async () => await tool.ValidateAsync(tmdlFiles));
-            
-            Assert.Equal(McpErrorCode.InternalError, exception.ErrorCode);
+                async () => await tool.ExecuteAsync(request));
+              Assert.Equal(McpErrorCode.InternalError, exception.ErrorCode);
             Assert.Contains("TMDL validation failed", exception.Message);
             Assert.IsType<Exception>(exception.InnerException);
         }
-
+        
         #endregion
 
         #region DeploymentTool Tests
-
+        
         [Fact]
         public void DeploymentTool_EmptyModelId_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
             var mockFabricClient = new Mock<IFabricClient>();
             var tool = new DeploymentTool(mockFabricClient.Object);
+            var request = new Models.Requests.DeploymentRequest
+            {
+                ModelId = "",
+                TargetEnvironment = "test-env"
+            };
 
             // Act & Assert
             var exception = Assert.ThrowsAsync<McpException>(
-                async () => await tool.DeploySemanticModelAsync("", "test-env"));
-            
-            Assert.Equal(McpErrorCode.InvalidParams, exception.Result.ErrorCode);
+                async () => await tool.ExecuteAsync(request));
+              Assert.Equal(McpErrorCode.InvalidParams, exception.Result.ErrorCode);
             Assert.Contains("Model ID is required", exception.Result.Message);
         }
-
+        
         [Fact]
         public void DeploymentTool_EmptyTargetEnvironment_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
             var mockFabricClient = new Mock<IFabricClient>();
             var tool = new DeploymentTool(mockFabricClient.Object);
+            var request = new Models.Requests.DeploymentRequest
+            {
+                ModelId = "test-model",
+                TargetEnvironment = ""
+            };
 
             // Act & Assert
             var exception = Assert.ThrowsAsync<McpException>(
-                async () => await tool.DeploySemanticModelAsync("test-model", ""));
+                async () => await tool.ExecuteAsync(request));
             
             Assert.Equal(McpErrorCode.InvalidParams, exception.Result.ErrorCode);
             Assert.Contains("Target environment is required", exception.Result.Message);
