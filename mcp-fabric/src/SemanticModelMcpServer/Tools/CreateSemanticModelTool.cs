@@ -15,9 +15,9 @@ namespace SemanticModelMcpServer.Tools
     public class CreateSemanticModelTool
     {
         private readonly ILogger<CreateSemanticModelTool> _logger;
-        private readonly FabricClient _fabricClient;
+        private readonly IFabricClient _fabricClient;
 
-        public CreateSemanticModelTool(ILogger<CreateSemanticModelTool> logger, FabricClient fabricClient)
+        public CreateSemanticModelTool(ILogger<CreateSemanticModelTool> logger, IFabricClient fabricClient)
         {
             _logger = logger;
             _fabricClient = fabricClient;

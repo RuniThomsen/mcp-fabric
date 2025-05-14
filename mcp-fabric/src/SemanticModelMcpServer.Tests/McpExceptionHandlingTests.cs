@@ -15,16 +15,13 @@ namespace SemanticModelMcpServer.Tests
     public class McpExceptionHandlingTests
     {
         #region CreateSemanticModelTool Tests
-        
-        [Fact]
+          [Fact]
         public async Task CreateSemanticModelTool_EmptyModelName_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
             var mockLogger = new Mock<ILogger<CreateSemanticModelTool>>();
-            // Since FabricClient is not an interface, we can't use Moq directly
-            // We'll need to use a real FabricClient for these tests or modify the code to use IFabricClient
-            var fabricClient = new FabricClient("https://test.example.com");
-            var tool = new CreateSemanticModelTool(mockLogger.Object, fabricClient);
+            var mockFabricClient = new Mock<IFabricClient>();
+            var tool = new CreateSemanticModelTool(mockLogger.Object, mockFabricClient.Object);
             var request = new CreateSemanticModelRequest { Name = string.Empty };
 
             // Act & Assert
@@ -34,15 +31,13 @@ namespace SemanticModelMcpServer.Tests
             Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
             Assert.Contains("Model name is required", exception.Message);
         }
-        
-        [Fact]
+          [Fact]
         public async Task CreateSemanticModelTool_NoTmdlFiles_ShouldThrowMcpExceptionWithInvalidParams()
         {
             // Arrange
             var mockLogger = new Mock<ILogger<CreateSemanticModelTool>>();
-            // Since FabricClient is not an interface, we can't use Moq directly
-            var fabricClient = new FabricClient("https://test.example.com");
-            var tool = new CreateSemanticModelTool(mockLogger.Object, fabricClient);
+            var mockFabricClient = new Mock<IFabricClient>();
+            var tool = new CreateSemanticModelTool(mockLogger.Object, mockFabricClient.Object);
             var request = new CreateSemanticModelRequest 
             { 
                 Name = "TestModel", 
@@ -55,13 +50,31 @@ namespace SemanticModelMcpServer.Tests
             
             Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
             Assert.Contains("At least one TMDL file is required", exception.Message);
-        }        [Fact]
-        public void CreateSemanticModelTool_ClientThrowsInvalidOperation_ShouldRethrowAsMcpException()
+        }[Fact]
+        public async Task CreateSemanticModelTool_ClientThrowsInvalidOperation_ShouldRethrowAsMcpException()
         {
-            // This test is skipped because we can't properly mock FabricClient
-            // This would require refactoring the tool to use IFabricClient
-            // Just mark the test as passed
-            Assert.True(true);
+            // Arrange
+            var mockLogger = new Mock<ILogger<CreateSemanticModelTool>>();
+            var mockFabricClient = new Mock<IFabricClient>();
+            var tool = new CreateSemanticModelTool(mockLogger.Object, mockFabricClient.Object);
+            
+            var request = new CreateSemanticModelRequest 
+            { 
+                Name = "TestModel", 
+                TmdlFiles = new Dictionary<string, string> { { "test.tmdl", "content" } }
+            };
+            
+            mockFabricClient
+                .Setup(x => x.CreateSemanticModelAsync(It.IsAny<CreateSemanticModelRequest>()))
+                .ThrowsAsync(new InvalidOperationException("Test exception"));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<McpException>(
+                async () => await tool.ExecuteAsync(request));
+            
+            Assert.Equal(McpErrorCode.InternalError, exception.ErrorCode);
+            Assert.Contains("Failed to create semantic model", exception.Message);
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
         }
 
         #endregion
