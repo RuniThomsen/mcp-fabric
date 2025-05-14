@@ -76,7 +76,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var result = await _validateTmdlTool.ExecuteAsync(request);
+            var result = await _validateTmdlTool.ValidateAsync(request);
 
             // Assert
             Assert.NotNull(result);
@@ -104,7 +104,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var result = await _validateTmdlTool.ExecuteAsync(request);
+            var result = await _validateTmdlTool.ValidateAsync(request);
 
             // Assert
             Assert.NotNull(result);
@@ -128,7 +128,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act & Assert
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ExecuteAsync(request));
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(request));
             Assert.Contains("PBI Tools", exception.Message);
             Assert.Equal(ModelContextProtocol.McpErrorCode.InternalError, exception.ErrorCode);
         }        
@@ -141,7 +141,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act & Assert
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ExecuteAsync(request));
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(request));
             Assert.Contains("At least one TMDL file must be provided", exception.Message);
             Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
         }        
@@ -151,7 +151,7 @@ namespace SemanticModelMcpServer.Tests
         {
             // Act & Assert
             var request = new ValidateTmdlRequest { TmdlFiles = null };
-            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ExecuteAsync(request));
+            var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => _validateTmdlTool.ValidateAsync(request));
             Assert.Contains("TMDL files must be provided", exception.Message);
             Assert.Equal(ModelContextProtocol.McpErrorCode.InvalidParams, exception.ErrorCode);
         }
@@ -166,7 +166,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act
             var request = new ValidateTmdlRequest { TmdlFiles = files };
-            await _validateTmdlTool.ExecuteAsync(request);
+            await _validateTmdlTool.ValidateAsync(request);
 
             // Assert
             Assert.Equal(1, _testRunner.CallCount);
@@ -186,7 +186,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var result = await _validateTmdlTool.ExecuteAsync(request);
+            var result = await _validateTmdlTool.ValidateAsync(request);
 
             // Assert
             Assert.NotNull(result);
@@ -209,7 +209,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var result = await _validateTmdlTool.ExecuteAsync(request);
+            var result = await _validateTmdlTool.ValidateAsync(request);
 
             // Assert
             Assert.NotNull(result);
@@ -232,7 +232,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act
             var request = new ValidateTmdlRequest { TmdlFiles = tmdlFiles };
-            var result = await _validateTmdlTool.ExecuteAsync(request);
+            var result = await _validateTmdlTool.ValidateAsync(request);
 
             // Assert
             Assert.NotNull(result);

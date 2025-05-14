@@ -24,7 +24,7 @@ namespace SemanticModelMcpServer.Tools
 
         [McpServerTool("validateTmdl")]
         [Description("Validates TMDL files for syntax and semantic errors.")]
-        public async Task<ValidateTmdlResponse> ExecuteAsync(ValidateTmdlRequest request)
+        public async Task<ValidateTmdlResponse> ValidateAsync(ValidateTmdlRequest request)
         {
             _logger.LogInformation("Starting TMDL validation");
             

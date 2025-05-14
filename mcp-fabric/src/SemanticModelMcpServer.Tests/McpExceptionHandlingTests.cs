@@ -178,7 +178,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<McpException>(
-                async () => await tool.ExecuteAsync(request));
+                async () => await tool.ValidateAsync(request));
               Assert.Equal(McpErrorCode.InvalidParams, exception.ErrorCode);
             Assert.Contains("TMDL files must be provided for validation", exception.Message);
         }
@@ -199,7 +199,7 @@ namespace SemanticModelMcpServer.Tests
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<McpException>(
-                async () => await tool.ExecuteAsync(request));
+                async () => await tool.ValidateAsync(request));
               Assert.Equal(McpErrorCode.InternalError, exception.ErrorCode);
             Assert.Contains("TMDL validation failed", exception.Message);
             Assert.IsType<Exception>(exception.InnerException);
