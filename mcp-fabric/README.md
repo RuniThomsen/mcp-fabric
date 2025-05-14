@@ -155,14 +155,27 @@ docker build -t mcp-server:latest .
 docker run -p 8080:80 -e FABRIC_API_URL=https://api.fabric.microsoft.com -e FABRIC_AUTH_METHOD=ServicePrincipal mcp-server:latest
 ```
 
-#### Environment Variables for Docker
+### VS Code + Docker (Dev Container)
 
-When running in Docker, you can configure the following environment variables:
-- `FABRIC_API_URL`: URL of the Microsoft Fabric API
-- `FABRIC_AUTH_METHOD`: Authentication method (`ManagedIdentity`, `ServicePrincipal`, or `Interactive`)
-- `TENANT_ID`: Azure tenant ID (required for ServicePrincipal auth)
-- `CLIENT_ID`: Client ID (required for ServicePrincipal auth)
-- `CLIENT_SECRET`: Client secret (required for ServicePrincipal auth)
+You can develop, run, and debug the MCP server entirely inside Docker while coding in VS Code.
+
+1. Install the *Dev Containers* extension (`ms-vscode-remote.remote-containers`).
+2. Press `F1` → **Dev Containers: Reopen in Container**. VS Code will build the image defined in `.devcontainer/Dockerfile` (re-using the repo’s `Dockerfile`) and attach your editor to it.
+3. Inside the container terminal, run:
+   ```powershell
+   dotnet run --project src/SemanticModelMcpServer/SemanticModelMcpServer.csproj
+   ```
+4. Use the **Run & Debug** panel and launch profile *MCP Server (Docker)* to start/attach the debugger.
+
+> The dev-container shares layers with the production image built above, so there is almost no additional disk or build overhead.
+
+#### Alternative: attach to an already running container
+```powershell
+# Start container in background
+Start-Process docker "run -d --name mcp-dev -p 8080:80 -e FABRIC_API_URL=https://api.fabric.microsoft.com -e FABRIC_AUTH_METHOD=ServicePrincipal mcp-server:latest"
+
+# VS Code → F1 → “Dev Containers: Attach to Running Container…” → select mcp-dev
+```
 
 ### Visual Studio Code Integration
 
