@@ -90,14 +90,16 @@ namespace SemanticModelMcpServer.Services
                     result.IsValid = !output.Contains("error") && !output.Contains("failed");
                     
                     if (!result.IsValid)
-                    {
-                        // Parse errors from output
+                    {                        // Parse errors from output
                         var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var line in lines)
                         {
                             if (line.Contains("error"))
                             {
-                                result.Errors.Add(line.Trim());
+                                result.Errors.Add(new ValidationError { 
+                                    Message = line.Trim(),
+                                    Severity = "Error"
+                                });
                             }
                         }
                     }
@@ -105,7 +107,10 @@ namespace SemanticModelMcpServer.Services
                 catch (Exception ex)
                 {
                     result.IsValid = false;
-                    result.Errors.Add($"Validation process error: {ex.Message}");
+                    result.Errors.Add(new ValidationError {
+                        Message = $"Validation process error: {ex.Message}",
+                        Severity = "Error"
+                    });
                 }
                 
                 return result;
@@ -130,11 +135,15 @@ namespace SemanticModelMcpServer.Services
         public async Task<ValidationResult> ValidateTmdlAsync(string tmdlPath)
         {
             if (!Directory.Exists(tmdlPath))
-            {
-                return new ValidationResult
+            {                return new ValidationResult
                 {
                     IsValid = false,
-                    Errors = new List<string> { $"Directory not found: {tmdlPath}" }
+                    Errors = new List<ValidationError> { 
+                        new ValidationError {
+                            Message = $"Directory not found: {tmdlPath}",
+                            Severity = "Error"
+                        }
+                    }
                 };
             }
             
@@ -144,15 +153,17 @@ namespace SemanticModelMcpServer.Services
             {
                 var output = await RunPbiToolsCommandAsync("pbi-tools", $"validate \"{tmdlPath}\"");
                 result.IsValid = !output.Contains("error") && !output.Contains("failed");
-                
-                if (!result.IsValid)
+                  if (!result.IsValid)
                 {
                     var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (var line in lines)
                     {
                         if (line.Contains("error"))
                         {
-                            result.Errors.Add(line.Trim());
+                            result.Errors.Add(new ValidationError {
+                                Message = line.Trim(),
+                                Severity = "Error"
+                            });
                         }
                     }
                 }
@@ -160,7 +171,10 @@ namespace SemanticModelMcpServer.Services
             catch (Exception ex)
             {
                 result.IsValid = false;
-                result.Errors.Add($"Validation process error: {ex.Message}");
+                result.Errors.Add(new ValidationError {
+                    Message = $"Validation process error: {ex.Message}",
+                    Severity = "Error"
+                });
             }
             
             return result;
