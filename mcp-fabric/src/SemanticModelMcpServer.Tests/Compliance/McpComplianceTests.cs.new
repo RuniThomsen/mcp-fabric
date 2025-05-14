@@ -1,0 +1,155 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using ModelContextProtocol;
+using Moq;
+using SemanticModelMcpServer.Models.Requests;
+using SemanticModelMcpServer.Services;
+using Xunit;
+
+namespace SemanticModelMcpServer.Tests.Compliance
+{
+    public class McpComplianceTests
+    {
+        [Fact]
+        public void ToolRegistrationShouldFollowMcpSpecification()
+        {
+            // Create a service collection
+            var services = new ServiceCollection();
+            
+            // Add MCP server
+            services.AddMcpServer();
+            
+            // Register tools from main assembly
+            var assembly = typeof(SemanticModelMcpServer.Program).Assembly;
+            services.RegisterMcpToolsFromAssembly(assembly);
+            
+            // Build the service provider
+            var serviceProvider = services.BuildServiceProvider();
+            
+            // Get the tool registry
+            var toolRegistry = serviceProvider.GetService<IList<ModelContextProtocol.Server.McpToolTypeInfo>>();
+            
+            // Make sure tools are registered
+            Assert.NotNull(toolRegistry);
+            Assert.True(toolRegistry.Count > 0, "Should have registered tool types");
+            
+            // Check for specific tools
+            var toolNames = new List<string>();
+            foreach (var toolType in toolRegistry)
+            {
+                foreach (var tool in toolType.Tools)
+                {
+                    toolNames.Add(tool.Name);
+                }
+            }
+            
+            // Check for our core tools
+            Assert.Contains("createSemanticModel", toolNames);
+            Assert.Contains("updateSemanticModel", toolNames);
+            Assert.Contains("refreshSemanticModel", toolNames);
+        }
+        
+        [Fact]
+        public void ToolAttributesShouldFollowMcpSpecification()
+        {
+            // Check tool attributes for proper MCP formatting
+            
+            // Get the tool types
+            var createToolType = typeof(Tools.CreateSemanticModelTool);
+            var updateToolType = typeof(Tools.UpdateSemanticModelTool);
+            var refreshToolType = typeof(Tools.RefreshTool);
+            
+            // Verify they all have McpServerToolType attribute
+            Assert.True(Attribute.IsDefined(createToolType, typeof(McpServerToolTypeAttribute)),
+                "Tool classes should have McpServerToolTypeAttribute");
+            Assert.True(Attribute.IsDefined(updateToolType, typeof(McpServerToolTypeAttribute)));
+            Assert.True(Attribute.IsDefined(refreshToolType, typeof(McpServerToolTypeAttribute)));
+            
+            // Verify the Execute methods have McpServerTool attribute
+            var createMethod = createToolType.GetMethod("ExecuteAsync");
+            var updateMethod = updateToolType.GetMethod("ExecuteAsync");
+            var refreshMethod = refreshToolType.GetMethod("ExecuteAsync");
+            
+            Assert.NotNull(createMethod);
+            Assert.True(Attribute.IsDefined(createMethod, typeof(McpServerToolAttribute)));
+            Assert.True(Attribute.IsDefined(updateMethod, typeof(McpServerToolAttribute)));
+            Assert.True(Attribute.IsDefined(refreshMethod, typeof(McpServerToolAttribute)));
+            
+            // Verify that tool names follow MCP convention (camelCase)
+            var createAttr = createMethod.GetCustomAttribute<McpServerToolAttribute>();
+            var updateAttr = updateMethod.GetCustomAttribute<McpServerToolAttribute>();
+            var refreshAttr = refreshMethod.GetCustomAttribute<McpServerToolAttribute>();
+            
+            Assert.Equal("createSemanticModel", createAttr.Name);
+            Assert.Equal("updateSemanticModel", updateAttr.Name);
+            Assert.Equal("refreshSemanticModel", refreshAttr.Name);
+            
+            // Check that they have descriptions
+            Assert.True(Attribute.IsDefined(createMethod, typeof(System.ComponentModel.DescriptionAttribute)));
+            Assert.True(Attribute.IsDefined(updateMethod, typeof(System.ComponentModel.DescriptionAttribute)));
+            Assert.True(Attribute.IsDefined(refreshMethod, typeof(System.ComponentModel.DescriptionAttribute)));
+        }
+        
+        [Fact]
+        public void McpExceptionUsageShouldBeConsistent()
+        {
+            // Check that our code uses McpException correctly
+            
+            // Create test instances
+            var mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<Tools.CreateSemanticModelTool>>();
+            var mockFabricClient = new Mock<IFabricClient>();
+            var tool = new Tools.CreateSemanticModelTool(mockLogger.Object, mockFabricClient.Object);
+            
+            // Test with invalid parameters
+            var invalidRequest = new CreateSemanticModelRequest { Name = "" };
+            var exception = Assert.ThrowsAsync<McpException>(() => tool.ExecuteAsync(invalidRequest));
+            
+            // Verify the exception properties follow MCP conventions
+            Assert.Equal(McpErrorCode.InvalidParams, exception.Result.ErrorCode);
+            Assert.NotNull(exception.Result.Message);
+            Assert.DoesNotContain("Exception", exception.Result.Message); // Error should be user-friendly
+            
+            // For server errors, the standard is to use McpErrorCode.InternalError
+            mockFabricClient
+                .Setup(c => c.CreateSemanticModelAsync(It.IsAny<CreateSemanticModelRequest>()))
+                .ThrowsAsync(new InvalidOperationException("Test error"));
+                
+            var validRequest = new CreateSemanticModelRequest 
+            { 
+                Name = "Valid",
+                TmdlFiles = new Dictionary<string, string> { { "model.tmdl", "content" } }
+            };
+            
+            var serverException = Assert.ThrowsAsync<McpException>(() => tool.ExecuteAsync(validRequest));
+            Assert.Equal(McpErrorCode.InternalError, serverException.Result.ErrorCode);
+        }
+        
+        [Fact]
+        public void ModelContextProtocolStructuresAreCorrect()
+        {
+            // Test that some basic MCP structures are present and correctly defined
+            // This helps ensure that we're using the MCP library correctly
+            
+            // Basic validation of error code enum
+            Assert.Equal(-32700, (int)McpErrorCode.ParseError);
+            Assert.Equal(-32600, (int)McpErrorCode.InvalidRequest);
+            Assert.Equal(-32601, (int)McpErrorCode.MethodNotFound);
+            Assert.Equal(-32602, (int)McpErrorCode.InvalidParams);
+            Assert.Equal(-32603, (int)McpErrorCode.InternalError);
+            
+            // Verify MCP exception behaves as expected
+            var ex1 = new McpException("Invalid params test", McpErrorCode.InvalidParams);
+            Assert.Equal(McpErrorCode.InvalidParams, ex1.ErrorCode);
+            Assert.Equal("Invalid params test", ex1.Message);
+            
+            var innerEx = new InvalidOperationException("Inner exception");
+            var ex2 = new McpException("Wrapped exception", innerEx, McpErrorCode.InternalError);
+            Assert.Equal(McpErrorCode.InternalError, ex2.ErrorCode);
+            Assert.Same(innerEx, ex2.InnerException);
+        }
+    }
+}
