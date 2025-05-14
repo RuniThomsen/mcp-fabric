@@ -179,26 +179,40 @@ Start-Process docker "run -d --name mcp-dev -p 8080:80 -e FABRIC_API_URL=https:/
 
 ### Visual Studio Code Integration
 
-The MCP server can be integrated with Visual Studio Code using the Model Context Protocol. Add the following configuration to your VS Code settings.json:
+The MCP server can be integrated with Visual Studio Code using the Model Context Protocol. For a one-click Docker launch, add the following configuration to your `settings.json`:
 
-```json
-"mcp": {
+```jsonc
+{
+  "mcp": {
+    "inputs": [
+      {
+        "type": "promptString",
+        "id": "fabric_auth_method",
+        "description": "Authentication method (ManagedIdentity | ServicePrincipal)",
+        "default": "ManagedIdentity"
+      }
+    ],
     "servers": {
-        "fabric": {
-            "command": "dotnet",
-            "args": [
-                "run",
-                "--project",
-                "${workspaceFolder}/src/SemanticModelMcpServer/SemanticModelMcpServer.csproj"
-            ],
-            "env": {
-                "FABRIC_API_URL": "https://api.fabric.microsoft.com",
-                "FABRIC_AUTH_METHOD": "Interactive"
-            }
-        }
+      "fabric": {
+        "command": "docker",
+        "args": [
+          "run", "-i", "--rm",
+          "-p", "8080:80",
+          "-e", "FABRIC_API_URL=https://api.fabric.microsoft.com", // default URL (no prompt)
+          "-e", "FABRIC_AUTH_METHOD=${input:fabric_auth_method}",
+          "mcp/fabric:latest"
+        ]
+      }
     }
+  }
 }
 ```
+
+1. Open *Preferences → Settings (JSON)* and paste the snippet.
+2. Run **“MCP: Start Server”** and pick **fabric**.
+3. VS Code prompts only for the authentication method, then pulls and starts the Docker image.
+
+> The container is removed automatically after it stops (`--rm`). Adjust the port or additional environment variables as needed.
 
 ## Usage Examples
 
