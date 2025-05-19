@@ -180,9 +180,7 @@ namespace SemanticModelMcpServer.Tests.Compliance
                 Assert.NotNull(responses[i]);
                 Assert.NotNull(responses[i].GetProperty("result"));
                 Assert.True(responses[i].GetProperty("result").GetProperty("tools").GetArrayLength() > 0);
-            }
-            
-            // Verify that the responses have the correct ids
+            }            // Verify that the responses have the correct ids
             var ids = new[] 
             { 
                 responses[0].GetProperty("id").GetInt32(),
@@ -190,7 +188,10 @@ namespace SemanticModelMcpServer.Tests.Compliance
                 responses[2].GetProperty("id").GetInt32()
             };
             Array.Sort(ids);
-            Assert.Equal(new[] { 1, 2, 3 }, ids);
+            Assert.Collection(ids,
+                id => Assert.Equal(1, id),
+                id => Assert.Equal(2, id),
+                id => Assert.Equal(3, id));
             
             await ShutdownServerProcessAsync(process);
         }
