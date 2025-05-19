@@ -35,6 +35,8 @@ For the full, evolving pitfall list see [docs/debugging-mcp-server.md#known-pitf
    - Use `dotnet test` with appropriate filters
 5. **Rebuild and Redeploy**
    - Clean, build, publish, and rebuild Docker image as needed
+6. **Run Compliance Quick Test**
+   - Execute the PowerShell script in **Quick Compliance Test Script** to verify `listTools` and basic capabilities
 
 ## Debugging Code Issues (Key Areas)
 - Program Entry Point: `Program.cs`
@@ -47,6 +49,47 @@ For the full, evolving pitfall list see [docs/debugging-mcp-server.md#known-pitf
 - Decorate tool classes and methods with correct attributes
 - Prefer `Task<T>` return types
 - Initialize `ServerCapabilities` with `ToolsCapability`
+
+### Bootstrap Sequence Reference
+```csharp
+// Typical Program.cs bootstrap pattern (mirrors EverythingServer sample)
+Host.CreateDefaultBuilder(args)
+    .ConfigureMcpServer(builder =>
+    {
+        builder.AddMcpServer()
+               .WithStdioServerTransport()
+               .WithToolsFromAssembly(typeof(Program).Assembly)
+               .WithDefaultJsonSerializerOptions();
+    })
+    .Build()
+    .Run();
+```
+
+### Server Validation Checklist
+1. Confirm `mcp.json` exists, is valid JSON, and includes minimal required properties (`name`, `version`, `entryPoint`).
+2. Start the server and execute `listTools`. Expect **≥ 1** tool in the response.
+3. Verify `initialize` returns `ServerCapabilities` with a populated `tools` array.
+4. Ensure all diagnostic output is written to **stderr**.
+
+### Quick Compliance Test Script (PowerShell)
+```powershell
+# Start server in background and capture PID
+Start-Process -FilePath "./publish/SemanticModelMcpServer.exe" -ArgumentList "--stdio" -PassThru | Tee-Object -Variable proc;
+
+# Send listTools request; stop on failure
+echo '{ "jsonrpc":"2.0","id":1,"method":"listTools" }' |
+    & "$Env:ProgramFiles\nodejs\node.exe" ".\scripts\call-stdio.js" |
+    ConvertFrom-Json | ForEach-Object {
+        if (-not $_.result.tools.Count) {
+            Write-Error "No tools returned"; Stop-Process -Id $proc.Id
+        }
+    };
+
+# Clean up
+Stop-Process -Id $proc.Id;
+```
+
+> The script follows PowerShell guidelines (semicolon separators) and halts if `listTools` returns zero tools.
 
 ## Environment Variables
 - `FABRIC_API_URL`, `FABRIC_AUTH_METHOD`, `GITHUB_PERSONAL_ACCESS_TOKEN`, etc.
@@ -68,3 +111,24 @@ Ensure `.vscode/settings.json` contains:
 6. Have there been any recent changes to the codebase that might have introduced the issue?
 7. Are all dependencies properly installed and up-to-date?
 8. Is there a specific test case that can reproduce the problem?
+
+## Diagnostics-Only Mode
+To run the server in diagnostics-only mode without starting the full server:
+```powershell
+# Run local server in diagnostics-only mode
+./publish/SemanticModelMcpServer.exe --diagnostics-only;
+
+# Run Docker container in diagnostics-only mode
+docker run --rm mcp-server:latest --diagnostics-only;
+```
+
+## PowerShell Command Execution Standards
+- Use semicolons (`;`) as command separators in PowerShell scripts, not ampersands (`&&`)
+- For conditional execution, use proper PowerShell syntax:
+  ```powershell
+  # Use this for conditional execution (instead of &&)
+  if ($?) { command2 }
+  
+  # Use this for fallback execution (instead of ||)
+  command1; if (-not $?) { command2 }
+  ```
