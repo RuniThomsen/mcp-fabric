@@ -11,16 +11,28 @@ if (-not $imageExists) {
     Write-Host "mcp-server:latest image not found. Building image now..." -ForegroundColor Yellow
     
     # Get the directory of this script and navigate to the project root
-    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $projectRoot = Split-Path -Parent $scriptPath
-    
-    # Build the Docker image
-    docker build -t mcp-server:latest $projectRoot
-    
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Successfully built mcp-server:latest Docker image." -ForegroundColor Green
-    } else {
-        Write-Host "Failed to build Docker image. Please check the Dockerfile and build logs." -ForegroundColor Red
+    $scriptDir = $null
+    try {
+        $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+        if (-not $scriptDir) {
+            throw "Unable to determine script directory"
+        }
+        
+        $projectRoot = Split-Path -Parent $scriptDir
+        Write-Host "Script directory: $scriptDir" -ForegroundColor Cyan
+        Write-Host "Project root: $projectRoot" -ForegroundColor Cyan
+        
+        # Build the Docker image
+        docker build -t mcp-server:latest $projectRoot
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Successfully built mcp-server:latest Docker image." -ForegroundColor Green
+        } else {
+            Write-Host "Failed to build Docker image. Please check the Dockerfile and build logs." -ForegroundColor Red
+            exit 1
+        }
+    } catch {
+        Write-Host "ERROR: $_" -ForegroundColor Red
         exit 1
     }
 } else {
@@ -36,22 +48,55 @@ if ($containerRunning) {
     docker rm semantic-model
 }
 
+# Get directory paths
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if (-not $scriptDir) {
+    Write-Host "ERROR: Unable to determine script directory" -ForegroundColor Red
+    exit 1
+}
+
+$projectRoot = Split-Path -Parent $scriptDir
+$workspaceRoot = Split-Path -Parent $projectRoot
+
+if (-not $projectRoot) {
+    Write-Host "ERROR: Unable to determine project root directory" -ForegroundColor Red 
+    exit 1
+}
+
+if (-not $workspaceRoot) {
+    # Fall back to project root if workspace root can't be determined
+    $workspaceRoot = $projectRoot
+    Write-Host "WARNING: Unable to determine workspace root, using project root instead" -ForegroundColor Yellow
+}
+
+Write-Host "Script directory: $scriptDir" -ForegroundColor Cyan
+Write-Host "Project root: $projectRoot" -ForegroundColor Cyan
+Write-Host "Workspace root: $workspaceRoot" -ForegroundColor Cyan
+
 # Ensure the config file exists
-$workspaceRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 $configFile = Join-Path $workspaceRoot "mcp.json"
 $vscodeConfigFile = Join-Path $workspaceRoot ".vscode\mcp.json"
 $vscodeMcpConfig = Join-Path $workspaceRoot ".vscode\settings.json"
 
+Write-Host "Looking for config files at:" -ForegroundColor Cyan
+Write-Host "  - Workspace mcp.json: $configFile" -ForegroundColor Cyan
+Write-Host "  - VS Code mcp.json: $vscodeConfigFile" -ForegroundColor Cyan
+Write-Host "  - VS Code settings: $vscodeMcpConfig" -ForegroundColor Cyan
+
 # Check if VS Code settings specify a custom location for mcp.json
 $configPath = $configFile
 if (Test-Path $vscodeMcpConfig) {
-    $settings = Get-Content -Raw $vscodeMcpConfig | ConvertFrom-Json
-    if ($settings.'mcp.configurationFilePath') {
-        $customPath = $settings.'mcp.configurationFilePath' -replace '\$\{workspaceFolder\}', $workspaceRoot
-        if (Test-Path $customPath) {
-            $configPath = $customPath
-            Write-Host "Using custom mcp.json path from VS Code settings: $configPath" -ForegroundColor Green
+    try {
+        $settings = Get-Content -Raw $vscodeMcpConfig | ConvertFrom-Json
+        if ($settings.'mcp.configurationFilePath') {
+            $customPath = $settings.'mcp.configurationFilePath' -replace '\$\{workspaceFolder\}', $workspaceRoot
+            if (Test-Path $customPath) {
+                $configPath = $customPath
+                Write-Host "Using custom mcp.json path from VS Code settings: $configPath" -ForegroundColor Green
+            }
         }
+    } catch {
+        Write-Host "WARNING: Error reading VS Code settings: $_" -ForegroundColor Yellow
     }
 }
 
@@ -64,13 +109,19 @@ if (-not (Test-Path $configPath)) {
         $configPath = $configFile
         Write-Host "Found mcp.json in workspace root." -ForegroundColor Green
     } else {
-        Write-Host "ERROR: mcp.json not found in any of the expected locations." -ForegroundColor Red
-        Write-Host "Searched in:" -ForegroundColor Red
-        Write-Host "  - $configFile" -ForegroundColor Red
-        Write-Host "  - $vscodeConfigFile" -ForegroundColor Red
-        Write-Host "  - Custom path from VS Code settings (if configured)" -ForegroundColor Red
-        Write-Host "Please create a valid mcp.json configuration file." -ForegroundColor Red
-        exit 1
+        # Create a default configuration if none exists
+        Write-Host "WARNING: mcp.json not found in any of the expected locations." -ForegroundColor Yellow
+        Write-Host "Creating a default configuration file." -ForegroundColor Yellow
+        
+        # Create a default configuration
+        $defaultConfig = @{
+            fabricApiUrl = "https://api.fabric.microsoft.com"
+            authMethod = "ManagedIdentity"
+        }
+        
+        $configPath = Join-Path $projectRoot "mcp.json"
+        $defaultConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $configPath
+        Write-Host "Created default configuration at $configPath" -ForegroundColor Green
     }
 }
 
