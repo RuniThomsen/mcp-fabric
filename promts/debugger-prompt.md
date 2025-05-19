@@ -11,6 +11,30 @@ This debugging prompt is for the Semantic Model MCP Server project, which implem
 ## Known Pitfalls
 For the full, evolving pitfall list see [docs/debugging-mcp-server.md#known-pitfalls](../docs/debugging-mcp-server.md#known-pitfalls)
 
+> **New Pitfall (2025-05-19):**
+>
+> **Issue:** If `docker stop` or `docker rm` for the `semantic-model` container writes to **stdout**, the string (e.g. `semantic-model\n`) can corrupt the JSON-RPC stream, causing VS Code to see zero tools (`Discovered 0 tools`).
+>
+> **Root Cause:** The server's stdout is reserved for JSON-RPC. Any stray output (like container names) breaks protocol parsing.
+>
+> **Solution:** Redirect or suppress all stdout from these docker commands (e.g. `$null = docker stop semantic-model 2>&1`). Only write diagnostics to **stderr**.
+>
+> **Prevention:** Always ensure all non-JSON output (diagnostics, logs, command results) is sent to stderr, not stdout, during server startup and container management.
+
+> **New Pitfall (2025-05-19):**
+>
+> **Issue:** Tests may hang or fail when the `HealthProbeHostedService` tries to start an HTTP listener on port 8080 but gets "Access is denied" due to insufficient permissions.
+>
+> **Root Cause:** The health probe was trying to bind to `http://*:8080/health/` which requires admin privileges on Windows. When the binding fails with `HttpListenerException (5): Access denied`, the service was not handling the error gracefully, causing tests to hang.
+>
+> **Solution:** Modify the `HealthProbeHostedService` to:
+>   1. Use `http://localhost:{port}/health/` instead of `http://*:{port}/health/`
+>   2. Add proper exception handling for `HttpListenerException` with error code 5
+>   3. Log a warning but allow the server to continue running even when the health probe cannot start
+>   4. Track the listener state with an `_isListening` flag to prevent null reference exceptions in Dispose
+>
+> **Prevention:** Always implement graceful fallback behavior for non-critical services like health probes. Use try/catch blocks with specific exception types, and log warnings rather than failing when services that aren't essential to core functionality encounter permission issues.
+
 ## Self-Modification Directives
 
 - After each debugging session, append new pitfalls and lessons learned to [docs/debugging-mcp-server.md](../docs/debugging-mcp-server.md) and commit.
