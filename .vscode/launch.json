@@ -1,0 +1,43 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch MCP Server",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "MCP Server: Build and Run",
+            "program": "${workspaceFolder}/publish/SemanticModelMcpServer.exe",
+            "args": ["--verbose", "--mask-tokens"],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Attach to MCP Server",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickProcess}",
+            "justMyCode": false
+        },
+        {
+            "name": "Docker: Attach to MCP Server",
+            "type": "docker",
+            "request": "attach",
+            "containerName": "semantic-model",
+            "platform": "netCore"
+        },
+        {
+            "name": "Launch Tests",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "dotnet",
+            "args": [
+                "test",
+                "${workspaceFolder}/mcp-fabric/src/SemanticModelMcpServer.Tests"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        }
+    ]
+}

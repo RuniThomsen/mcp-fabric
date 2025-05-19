@@ -1,0 +1,24 @@
+name: Lint prompt size
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  check-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fail if the file is larger than 15 kB (≈2000 words / 6 000 tokens)
+      - name: Enforce size limit
+        run: |
+          FILE="promts/debugger-prompt.md"
+          LIMIT=15360            # bytes
+          SIZE=$(stat -c%s "$FILE")
+          echo "Current size: $SIZE bytes (limit $LIMIT)"
+          if [ "$SIZE" -gt "$LIMIT" ]; then
+            echo "::error file=$FILE::prompt file exceeds size limit ($SIZE > $LIMIT)"
+            exit 1
+          fi

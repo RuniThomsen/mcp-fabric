@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "command": "& \"${workspaceFolder}/mcp-fabric/scripts/start-mcp-server.ps1\"",
+      "group": "build",
+      "label": "MCP Server: Start with VS Code Integration",
+      "problemMatcher": [],
+      "type": "shell",
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "clear": true
+      }
+    }
+  ]
+}

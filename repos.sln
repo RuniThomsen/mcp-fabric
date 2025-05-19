@@ -4,13 +4,11 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mcp-fabric", "mcp-fabric", "{D2AA6BFF-2FF9-E668-C439-062A6A8AE316}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mcp-server", "mcp-server", "{C4A06050-FE6A-EE64-3DB7-F91CB02ECA4A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BC109816-DD27-69F2-31AA-24C4D488DA2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticModelMcpServer", "mcp-fabric\mcp-server\src\SemanticModelMcpServer\SemanticModelMcpServer.csproj", "{EA2E6774-24CA-23AE-6743-EDAA90E37454}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticModelMcpServer", "mcp-fabric\src\SemanticModelMcpServer\SemanticModelMcpServer.csproj", "{EA2E6774-24CA-23AE-6743-EDAA90E37454}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticModelMcpServer.Tests", "mcp-fabric\mcp-server\src\SemanticModelMcpServer.Tests\SemanticModelMcpServer.Tests.csproj", "{2066F076-D9A5-FDB8-4FE4-DD4047ECA231}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticModelMcpServer.Tests", "mcp-fabric\src\SemanticModelMcpServer.Tests\SemanticModelMcpServer.Tests.csproj", "{2066F076-D9A5-FDB8-4FE4-DD4047ECA231}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +27,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{C4A06050-FE6A-EE64-3DB7-F91CB02ECA4A} = {D2AA6BFF-2FF9-E668-C439-062A6A8AE316}
-		{BC109816-DD27-69F2-31AA-24C4D488DA2C} = {C4A06050-FE6A-EE64-3DB7-F91CB02ECA4A}
+	EndGlobalSection	GlobalSection(NestedProjects) = preSolution
+		{BC109816-DD27-69F2-31AA-24C4D488DA2C} = {D2AA6BFF-2FF9-E668-C439-062A6A8AE316}
 		{EA2E6774-24CA-23AE-6743-EDAA90E37454} = {BC109816-DD27-69F2-31AA-24C4D488DA2C}
 		{2066F076-D9A5-FDB8-4FE4-DD4047ECA231} = {BC109816-DD27-69F2-31AA-24C4D488DA2C}
 	EndGlobalSection

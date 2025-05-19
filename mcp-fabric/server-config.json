@@ -1,0 +1,4 @@
+{
+    "fabricApiUrl":  "https://api.fabric.microsoft.com",
+    "authMethod":  "ManagedIdentity"
+}

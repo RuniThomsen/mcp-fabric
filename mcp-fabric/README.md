@@ -292,6 +292,35 @@ else
    - Run `dotnet restore` to ensure all dependencies are properly installed
    - Check that you have the required versions of all tools
 
+4. **Docker Image Not Found Error**:
+   - If you encounter `Error response from daemon: No such image: mcp-server:latest` when starting the server, it means the Docker image hasn't been built yet
+   - Solution: Run `docker build -t mcp-server:latest ./mcp-fabric/` to build the image before starting the server
+   - Alternatively, use the provided script: `./mcp-fabric/scripts/ensure-docker-image.ps1` which automatically checks and builds the image if it doesn't exist
+   - VS Code users can use the "MCP Server: Ensure Docker Image and Run" task which handles this automatically
+
+5. **Configuration File Not Found Error**:
+   - If you see `ERROR: Configuration file mcp.json not found` when running the Docker container, it means the configuration file isn't properly mounted
+   - Solution: Ensure you mount the configuration file into the container with `-v "/path/to/mcp.json:/app/mcp.json"`
+   - Check that your mcp.json exists in either the workspace root or in the .vscode directory
+   - The updated script `./mcp-fabric/scripts/ensure-docker-image.ps1` will automatically locate and properly mount the configuration file
+
+### Automated Diagnostics
+
+The MCP server includes several built-in diagnostic tools that run at startup:
+
+```powershell
+# Run the server with diagnostics output
+./publish/SemanticModelMcpServer.exe --verbose
+
+# Check Docker image existence and build if needed
+./mcp-fabric/scripts/ensure-docker-image.ps1
+
+# View diagnostic output from a running container
+docker logs semantic-model | Select-String "Diagnostic"
+```
+
+For more detailed troubleshooting guides, see the [Debugging Guide](../docs/debugging-mcp-server.md).
+
 ## Security, Supply Chain & Best Practices
 
 - Uses Azure Managed Identity or DefaultAzureCredential for authentication (no secrets in code)

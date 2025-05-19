@@ -1,0 +1,46 @@
+﻿{
+    "servers": {
+        "github": {
+            "command": "docker",
+            "args": [
+                "run",
+                "-i",
+                "--rm",
+                "-e",
+                "GITHUB_PERSONAL_ACCESS_TOKEN=${input:github_token}",
+                "ghcr.io/github/github-mcp-server:latest"
+            ],
+            "env": {}
+        },
+        "fabric": {            "command": "docker",
+            "args": [
+                "run",
+                "--pull=never",
+                "-i",
+                "--rm",
+                "-p", "8080:80",
+                "-v", "${workspaceFolder}/mcp.json:/app/mcp.json",
+                "-e", "FABRIC_API_URL=https://api.fabric.microsoft.com",
+                "-e", "FABRIC_AUTH_METHOD=${input:fabric_auth_method}",
+                "-e", "Logging__Console__FormatterName=json",
+                "-e", "Logging__Console__LogToStandardErrorThreshold=Trace",
+                "mcp-server:latest"
+            ]
+        }    },
+    "fabricApiUrl": "https://api.fabric.microsoft.com",
+    "authMethod": "ManagedIdentity",
+    "inputs": [
+        {
+            "id": "github_token",
+            "type": "promptString",
+            "description": "GitHub Personal Access Token",
+            "password": true
+        },
+        {
+            "id": "fabric_auth_method",
+            "type": "promptString",
+            "description": "Authentication method (ManagedIdentity | ServicePrincipal)",
+            "default": "ManagedIdentity" 
+        }
+    ]
+}
