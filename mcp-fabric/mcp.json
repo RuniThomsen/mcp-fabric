@@ -12,7 +12,8 @@
             ],
             "env": {}
         },
-        "fabric": {            "command": "docker",
+        "fabric": {
+            "command": "docker",
             "args": [
                 "run",
                 "--pull=never",
@@ -26,7 +27,8 @@
                 "-e", "Logging__Console__LogToStandardErrorThreshold=Trace",
                 "mcp-server:latest"
             ]
-        }    },
+        }
+    },
     "fabricApiUrl": "https://api.fabric.microsoft.com",
     "authMethod": "ManagedIdentity",
     "inputs": [
@@ -40,7 +42,7 @@
             "id": "fabric_auth_method",
             "type": "promptString",
             "description": "Authentication method (ManagedIdentity | ServicePrincipal)",
-            "default": "ManagedIdentity" 
+            "default": "ManagedIdentity"
         }
     ]
 }

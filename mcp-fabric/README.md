@@ -137,22 +137,72 @@ dotnet run --project src/SemanticModelMcpServer/SemanticModelMcpServer.csproj
 ```
 
 For development purposes, you can also run with environment variables:
-```
+```powershell
 $env:FABRIC_API_URL="https://api.fabric.microsoft.com" 
 $env:FABRIC_AUTH_METHOD="ManagedIdentity"
 dotnet run --project src/SemanticModelMcpServer/SemanticModelMcpServer.csproj
 ```
 
+#### Environment Variables
+
+The MCP Server supports the following environment variables:
+
+| Variable | Description | Default Value | Options |
+|----------|-------------|---------------|---------|
+| `FABRIC_API_URL` | The base URL for the Microsoft Fabric API | `https://api.powerbi.com` | Any valid Microsoft Fabric API endpoint URL |
+| `FABRIC_AUTH_METHOD` | Authentication method to use with Fabric API | `ManagedIdentity` | `ManagedIdentity`, `ServicePrincipal` |
+| `Logging__Console__FormatterName` | Format for console logs | `simple` | `simple`, `json` |
+| `Logging__Console__LogToStandardErrorThreshold` | Minimum level to redirect to stderr | `Warning` | `Trace`, `Debug`, `Information`, `Warning`, `Error`, `Critical` |
+
+When using `ServicePrincipal` authentication, the following additional variables are required:
+
+| Variable | Description |
+|----------|-------------|
+| `AZURE_TENANT_ID` | Azure AD tenant ID for service principal |
+| `AZURE_CLIENT_ID` | Azure AD client/application ID for service principal |
+| `AZURE_CLIENT_SECRET` | Azure AD client secret for service principal |
+
 ### Docker
 
 The project includes a Docker container that supports both x64 and ARM64 architectures. To build and run the Docker container:
 
-```
+```powershell
 # Build the Docker image
 docker build -t mcp-server:latest .
 
 # Run the container
-docker run -p 8080:80 -e FABRIC_API_URL=https://api.fabric.microsoft.com -e FABRIC_AUTH_METHOD=ServicePrincipal mcp-server:latest
+docker run -p 8080:80 -e FABRIC_API_URL=https://api.fabric.microsoft.com -e FABRIC_AUTH_METHOD=ServicePrincipal -e AZURE_TENANT_ID=your-tenant-id -e AZURE_CLIENT_ID=your-client-id -e AZURE_CLIENT_SECRET=your-client-secret mcp-server:latest
+```
+
+#### Docker Environment Variables
+
+The Docker container accepts all the same environment variables as the local server (see [Environment Variables](#environment-variables) section above), which can be passed using the `-e` flag:
+
+```powershell
+docker run -p 8080:80 \
+  -e FABRIC_API_URL=https://api.fabric.microsoft.com \
+  -e FABRIC_AUTH_METHOD=ManagedIdentity \
+  -e Logging__Console__FormatterName=json \
+  -e Logging__Console__LogToStandardErrorThreshold=Trace \
+  mcp-server:latest
+```
+
+You can also mount a configuration file instead of using environment variables:
+
+```powershell
+# Mount a local mcp.json configuration file
+docker run -p 8080:80 -v "${PWD}/mcp.json:/app/mcp.json" mcp-server:latest
+```
+
+#### Configuration File
+
+Instead of environment variables, you can use a configuration file (`mcp.json`) with the following structure:
+
+```json
+{
+  "fabricApiUrl": "https://api.fabric.microsoft.com",
+  "authMethod": "ManagedIdentity"
+}
 ```
 
 ### VS Code + Docker (Dev Container)

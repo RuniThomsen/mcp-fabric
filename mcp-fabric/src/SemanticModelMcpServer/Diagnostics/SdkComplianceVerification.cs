@@ -9,6 +9,7 @@ using ModelContextProtocol.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SemanticModelMcpServer.Tools;
+using SemanticModelMcpServer.Diagnostics;
 
 namespace SemanticModelMcpServer.Diagnostics
 {
@@ -16,8 +17,8 @@ namespace SemanticModelMcpServer.Diagnostics
     {
         public static void VerifySdkCompliance()
         {
-            Console.WriteLine("====== MCP SDK Compliance Verification Tool ======");
-            Console.WriteLine("Checking SDK compliance for tool registrations and server configuration...");
+            ConsoleHelper.Log("====== MCP SDK Compliance Verification Tool ======");
+            ConsoleHelper.Log("Checking SDK compliance for tool registrations and server configuration...");
             
             try
             {
@@ -26,13 +27,13 @@ namespace SemanticModelMcpServer.Diagnostics
                     .Where(t => t.Name.EndsWith("Tool") && !t.IsInterface && !t.IsAbstract)
                     .ToList();
                 
-                Console.WriteLine($"Found {toolTypes.Count} potential tool types");
+                ConsoleHelper.Log($"Found {toolTypes.Count} potential tool types");
                 
                 var compliantToolTypes = toolTypes
                     .Where(t => t.GetCustomAttributes(typeof(ModelContextProtocol.McpServerToolTypeAttribute), false).Any())
                     .ToList();
                 
-                Console.WriteLine($"Found {compliantToolTypes.Count} types with [McpServerToolType] attribute");
+                ConsoleHelper.Log($"Found {compliantToolTypes.Count} types with [McpServerToolType] attribute");
                 
                 if (compliantToolTypes.Count < toolTypes.Count)
                 {
@@ -40,10 +41,10 @@ namespace SemanticModelMcpServer.Diagnostics
                         .Where(t => !t.GetCustomAttributes(typeof(ModelContextProtocol.McpServerToolTypeAttribute), false).Any())
                         .ToList();
                     
-                    Console.WriteLine("WARNING: The following tool types are missing [McpServerToolType] attribute:");
+                    ConsoleHelper.Log("WARNING: The following tool types are missing [McpServerToolType] attribute:");
                     foreach (var tool in noncompliantTools)
                     {
-                        Console.WriteLine($"  - {tool.FullName}");
+                        ConsoleHelper.Log($"  - {tool.FullName}");
                     }
                 }
                 
@@ -53,53 +54,53 @@ namespace SemanticModelMcpServer.Diagnostics
                     .Where(m => m.GetCustomAttributes(typeof(ModelContextProtocol.McpServerToolAttribute), false).Any())
                     .ToList();
                 
-                Console.WriteLine($"Found {toolMethods.Count} methods with [McpServerTool] attribute");
+                ConsoleHelper.Log($"Found {toolMethods.Count} methods with [McpServerTool] attribute");
                 
                 foreach (var method in toolMethods)
                 {
-                    Console.WriteLine($"Checking method: {method.DeclaringType?.Name}.{method.Name}");
+                    ConsoleHelper.Log($"Checking method: {method.DeclaringType?.Name}.{method.Name}");
                     
                     // Check return type is Task<T>
                     if (!method.ReturnType.IsGenericType || !method.ReturnType.GetGenericTypeDefinition().Equals(typeof(Task<>)))
                     {
-                        Console.WriteLine($"  ERROR: Method {method.Name} does not return Task<T> as required by MCP SDK");
+                        ConsoleHelper.Log($"  ERROR: Method {method.Name} does not return Task<T> as required by MCP SDK");
                     }
                     else 
                     {
                         var returnType = method.ReturnType.GetGenericArguments()[0];
-                        Console.WriteLine($"  Return type: Task<{returnType.Name}>");
+                        ConsoleHelper.Log($"  Return type: Task<{returnType.Name}>");
                     }
                     
                     // Check method has exactly one parameter
                     var parameters = method.GetParameters();
                     if (parameters.Length != 1)
                     {
-                        Console.WriteLine($"  ERROR: Method {method.Name} has {parameters.Length} parameters, expected exactly 1");
+                        ConsoleHelper.Log($"  ERROR: Method {method.Name} has {parameters.Length} parameters, expected exactly 1");
                     }
                     else
                     {
-                        Console.WriteLine($"  Parameter: {parameters[0].Name} of type {parameters[0].ParameterType.Name}");
+                        ConsoleHelper.Log($"  Parameter: {parameters[0].Name} of type {parameters[0].ParameterType.Name}");
                     }
                 }
                 
                 // 3. Verify proper server capabilities setup
-                Console.WriteLine("\nVerifying correct server capabilities setup in Program.cs...");
+                ConsoleHelper.Log("\nVerifying correct server capabilities setup in Program.cs...");
                 
                 // This is a simplified check - in a real scenario, you would need to analyze 
                 // the Program.cs file to ensure proper ordering of method calls
-                Console.WriteLine("Key compliance checks:");
-                Console.WriteLine("✓ MCP server is registered with AddMcpServer()");
-                Console.WriteLine("✓ WithStdioServerTransport() is called properly");
-                Console.WriteLine("✓ Tools are registered via WithToolsFromAssembly()");
-                Console.WriteLine("✓ ServerCapabilities initialized with Tools = new ToolsCapability()");
+                ConsoleHelper.Log("Key compliance checks:");
+                ConsoleHelper.Log("✓ MCP server is registered with AddMcpServer()");
+                ConsoleHelper.Log("✓ WithStdioServerTransport() is called properly");
+                ConsoleHelper.Log("✓ Tools are registered via WithToolsFromAssembly()");
+                ConsoleHelper.Log("✓ ServerCapabilities initialized with Tools = new ToolsCapability()");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ERROR during SDK compliance check: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
+                ConsoleHelper.Log($"ERROR during SDK compliance check: {ex.Message}");
+                ConsoleHelper.Log(ex.StackTrace);
             }
             
-            Console.WriteLine("=================================================");
+            ConsoleHelper.Log("=================================================");
         }
     }
 }

@@ -16,11 +16,39 @@ using SemanticModelMcpServer.Tools;
 namespace SemanticModelMcpServer
 {
     public class Program
-    {
+    {        
+        // Command-line arguments
+        private const string DiagnosticsOnlyArgument = "--diagnostics-only";
+        private const string ValidateConfigOnlyArgument = "--validate-config-only";
+        
         public static async Task Main(string[] args)
         {
+            bool diagnosticsOnlyMode = args.Contains(DiagnosticsOnlyArgument);
+            bool validateConfigOnlyMode = args.Contains(ValidateConfigOnlyArgument);
+            
             // Redirect diagnostic output to stderr so JSON-RPC stays on stdout
-            Console.Error.WriteLine("Semantic Model MCP Server starting up...");
+            Console.Error.WriteLine("Semantic Model MCP Server starting up...");            // If in validate-config-only mode, only validate the mcp.json configuration
+            if (validateConfigOnlyMode)
+            {
+                try
+                {
+                    Console.Error.WriteLine("Validating MCP server configuration...");
+                    bool isValid = McpServerDiagnostics.ValidateMcpJsonConfiguration();
+                    if (!isValid)
+                    {
+                        Console.Error.WriteLine("MCP configuration validation failed. See errors above.");
+                        Environment.Exit(1);
+                    }
+                    Console.Error.WriteLine("MCP configuration validation succeeded.");
+                    Environment.Exit(0); // Exit with success code
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error validating MCP configuration: {ex.Message}");
+                    Environment.Exit(1);
+                }
+            }
+            
             // Run tool registration diagnostics
             Console.Error.WriteLine("Performing tool registration diagnostics...");
             ToolRegistrationDiagnostics.VerifyToolRegistrations();
@@ -35,6 +63,13 @@ namespace SemanticModelMcpServer
             // Run SDK compliance verification
             Console.Error.WriteLine("\nVerifying SDK compliance...");
             SdkComplianceVerification.VerifySdkCompliance();
+
+            // If in diagnostics-only mode, exit after running diagnostics
+            if (diagnosticsOnlyMode)
+            {
+                Console.Error.WriteLine("Diagnostics completed. Exiting in --diagnostics-only mode.");
+                return; // Exit without starting the actual server
+            }
 
             // Check if port 8080 is already in use
             try
@@ -105,10 +140,15 @@ namespace SemanticModelMcpServer
             }
 
             await Host.CreateDefaultBuilder(args)
-                .ConfigureServices((context, services) =>
-                {
+                .ConfigureServices((context, services) =>                {
                     // DEBUG: Log tool discovery details
-                    var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
+                    var loggerFactory = LoggerFactory.Create(builder => 
+                        builder.AddConsole(opts => {
+                            // Force ALL console logs to go to stderr
+                            opts.LogToStandardErrorThreshold = LogLevel.Trace;
+                        })
+                        .SetMinimumLevel(LogLevel.Debug)
+                    );
                     var logger = loggerFactory.CreateLogger("ToolDiscovery");
                     var toolAssembly = typeof(CreateSemanticModelTool).Assembly;
                     logger.LogInformation("Scanning assembly: {Assembly}", toolAssembly.FullName);
@@ -169,12 +209,12 @@ namespace SemanticModelMcpServer
                 })
                 .ConfigureLogging(logging =>
                 {
+                    logging.ClearProviders(); // <-- Add this line!
                     logging.AddConsole(options =>
                     {
-                        // Send all log levels to stderr to keep stdout clear for JSON-RPC
                         options.LogToStandardErrorThreshold = LogLevel.Trace;
                     });
-                    logging.SetMinimumLevel(LogLevel.Debug); // Set to Debug level for more verbose logs
+                    logging.SetMinimumLevel(LogLevel.Debug);
                 })
                 .RunConsoleAsync();
         }

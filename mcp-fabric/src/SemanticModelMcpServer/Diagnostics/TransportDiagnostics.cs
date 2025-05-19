@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using SemanticModelMcpServer.Diagnostics;
 
 namespace SemanticModelMcpServer.Diagnostics
 {
@@ -21,7 +22,7 @@ namespace SemanticModelMcpServer.Diagnostics
             _logger.LogInformation("Testing standard IO transport...");
             
             // Write to console out
-            Console.WriteLine("MCP Transport Test: Writing to Console.Out");
+            ConsoleHelper.Log("MCP Transport Test: Writing to Console.Out");
             
             // Write to console error
             Console.Error.WriteLine("MCP Transport Test: Writing to Console.Error");

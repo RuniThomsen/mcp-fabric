@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using ModelContextProtocol;
 using SemanticModelMcpServer.Tools;
+using SemanticModelMcpServer.Diagnostics;
 
 namespace SemanticModelMcpServer.Diagnostics
 {
@@ -12,9 +13,9 @@ namespace SemanticModelMcpServer.Diagnostics
     {
         public static void VerifyToolRegistrations()
         {
-            Console.WriteLine("====== MCP Tool Registration Diagnostic Tool ======");
-            Console.WriteLine("Checking tool registrations in assembly: " + typeof(CreateSemanticModelTool).Assembly.FullName);
-            Console.WriteLine();
+            ConsoleHelper.Log("====== MCP Tool Registration Diagnostic Tool ======");
+            ConsoleHelper.Log("Checking tool registrations in assembly: " + typeof(CreateSemanticModelTool).Assembly.FullName);
+            ConsoleHelper.Log("");
 
             var toolTypes = new[]
             {
@@ -29,15 +30,15 @@ namespace SemanticModelMcpServer.Diagnostics
 
             foreach (var type in toolTypes)
             {
-                Console.WriteLine($"Checking tool class: {type.Name}");
+                ConsoleHelper.Log($"Checking tool class: {type.Name}");
                 
                 // Check for McpServerToolTypeAttribute
                 var hasTypeAttr = type.GetCustomAttributes(typeof(McpServerToolTypeAttribute), inherit: false).Any();
-                Console.WriteLine($"  Has [McpServerToolType] attribute: {hasTypeAttr}");
+                ConsoleHelper.Log($"  Has [McpServerToolType] attribute: {hasTypeAttr}");
                 
                 if (!hasTypeAttr)
                 {
-                    Console.WriteLine($"  ERROR: {type.Name} is missing the [McpServerToolType] attribute");
+                    ConsoleHelper.Log($"  ERROR: {type.Name} is missing the [McpServerToolType] attribute");
                     hasIssues = true;
                 }
                 
@@ -46,23 +47,23 @@ namespace SemanticModelMcpServer.Diagnostics
                     .Where(m => m.GetCustomAttributes(typeof(McpServerToolAttribute), false).Any())
                     .ToList();
                 
-                Console.WriteLine($"  Methods with [McpServerTool] attribute: {methods.Count}");
+                ConsoleHelper.Log($"  Methods with [McpServerTool] attribute: {methods.Count}");
                 
                 if (methods.Count == 0)
                 {
-                    Console.WriteLine($"  ERROR: {type.Name} has no methods with [McpServerTool] attribute");
+                    ConsoleHelper.Log($"  ERROR: {type.Name} has no methods with [McpServerTool] attribute");
                     hasIssues = true;
                 }
                 
                 foreach (var method in methods)
                 {
                     var attr = method.GetCustomAttribute<McpServerToolAttribute>();
-                    Console.WriteLine($"  - Method: {method.Name}, Tool name: {attr.Name}");
+                    ConsoleHelper.Log($"  - Method: {method.Name}, Tool name: {attr.Name}");
                     
                     // Check return type
                     if (!method.ReturnType.IsGenericType || !method.ReturnType.GetGenericTypeDefinition().Equals(typeof(Task<>)))
                     {
-                        Console.WriteLine($"    ERROR: Method {method.Name} does not return Task<T>");
+                        ConsoleHelper.Log($"    ERROR: Method {method.Name} does not return Task<T>");
                         hasIssues = true;
                     }
                     
@@ -70,31 +71,31 @@ namespace SemanticModelMcpServer.Diagnostics
                     var parameters = method.GetParameters();
                     if (parameters.Length != 1)
                     {
-                        Console.WriteLine($"    ERROR: Method {method.Name} has {parameters.Length} parameters, expected exactly 1");
+                        ConsoleHelper.Log($"    ERROR: Method {method.Name} has {parameters.Length} parameters, expected exactly 1");
                         hasIssues = true;
                     }
                     else
                     {
-                        Console.WriteLine($"    Parameter type: {parameters[0].ParameterType.Name}");
+                        ConsoleHelper.Log($"    Parameter type: {parameters[0].ParameterType.Name}");
                     }
                 }
                 
-                Console.WriteLine();
+                ConsoleHelper.Log("");
             }
             
-            Console.WriteLine("====== Diagnostic Summary ======");
-            Console.WriteLine($"Found {toolTypes.Length} tool classes");
+            ConsoleHelper.Log("====== Diagnostic Summary ======");
+            ConsoleHelper.Log($"Found {toolTypes.Length} tool classes");
             
             if (hasIssues)
             {
-                Console.WriteLine("Issues were found with tool registrations. See details above.");
+                ConsoleHelper.Log("Issues were found with tool registrations. See details above.");
             }
             else
             {
-                Console.WriteLine("All tools appear to be correctly registered.");
+                ConsoleHelper.Log("All tools appear to be correctly registered.");
             }
             
-            Console.WriteLine("================================");
+            ConsoleHelper.Log("================================");
         }
     }
 }
