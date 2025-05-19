@@ -16,7 +16,7 @@ This file tracks current issues and tasks for the Semantic Model MCP Server proj
 - [x] Add regression test for Docker startup with invalid mcp.json - Fixed May 19, 2025
 - [x] Review and update environment variable documentation in README - Fixed May 19, 2025
 - [x] Ensure all diagnostic output is routed to stderr (audit all Console.WriteLine usage) - Fixed May 19, 2025
-- [ ] Add more integration tests for protocol handshake edge cases
+- [x] Add more integration tests for protocol handshake edge cases - Fixed May 19, 2025
 - [x] Ensure debugger-prompt.md and server implementation strictly follow Model Context Protocol C# SDK compliance patterns - Fixed May 19, 2025
     - Reference and mirror the bootstrap sequence and tool registration as in [EverythingServer sample](https://github.com/modelcontextprotocol/csharp-sdk/tree/main/samples/EverythingServer)
     - Cross-check compliance with the [SDK README](https://github.com/modelcontextprotocol/csharp-sdk/blob/main/README.md)
