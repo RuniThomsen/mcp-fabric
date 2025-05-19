@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -15,31 +16,51 @@ namespace SemanticModelMcpServer
     {
         private readonly ILogger<HealthProbeHostedService> _logger;
         private readonly HttpListener _listener = new();
+        private readonly int _port = 8080;
+        private bool _isListening;
 
         public HealthProbeHostedService(ILogger<HealthProbeHostedService> logger)
         {
             _logger = logger;
-            _listener.Prefixes.Add("http://*:8080/health/");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _listener.Start();
-            _logger.LogInformation("Health probe listening at /health");
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                var ctx = await _listener.GetContextAsync();
-                ctx.Response.StatusCode = 200;
-                await ctx.Response.OutputStream.WriteAsync(
-                    Encoding.UTF8.GetBytes("OK"), stoppingToken);
-                ctx.Response.Close();
+                var prefix = $"http://localhost:{_port}/health/";
+                _listener.Prefixes.Add(prefix);
+                _listener.Start();
+                _isListening = true;
+                _logger.LogInformation("Health probe listening at {Prefix}", prefix);
+
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    var ctx = await _listener.GetContextAsync(stoppingToken);
+                    ctx.Response.StatusCode = 200;
+                    await ctx.Response.OutputStream.WriteAsync(
+                        Encoding.UTF8.GetBytes("OK"), stoppingToken);
+                    ctx.Response.Close();
+                }
+            }
+            catch (HttpListenerException ex) when (ex.ErrorCode == 5) // Access denied
+            {
+                _logger.LogWarning(
+                    "Health probe disabled: cannot register HTTP prefix (Access is denied). " +
+                    "Run elevated or register a URL ACL to enable health checks.");
+
+                try { await Task.Delay(Timeout.Infinite, stoppingToken); }
+                catch (TaskCanceledException) { /* normal shutdown */ }
             }
         }
 
         public override void Dispose()
         {
-            _listener.Stop();
-            _listener.Close();
+            if (_isListening)
+            {
+                try { _listener.Stop(); _listener.Close(); }
+                catch (ObjectDisposedException) { /* already disposed */ }
+            }
             base.Dispose();
         }
     }
